@@ -11,15 +11,16 @@
 
 <body>
   <div class="page-shell">
-    <section class="loader" aria-label="Laster inn bryllupshelgen">
-      <div class="loader__panel">
-        <span class="loader__spinner" aria-hidden="true"></span>
-        <p class="loader__message" data-loader-message aria-live="polite"></p>
+    <div class="invitation-shell" data-invitation-shell>
+      <div class="delivery-sequence" data-delivery-sequence aria-hidden="true">
+        <div class="delivery__envelope" data-delivery-envelope>
+          <div class="delivery__paper" data-delivery-paper></div>
+          <div class="delivery__body"></div>
+          <div class="delivery__front"></div>
+          <div class="delivery__flap"></div>
+        </div>
       </div>
-      <button class="loader__skip" type="button" data-loader-skip>Kom til poenget</button>
-    </section>
 
-    <div class="invitation-shell" data-invitation-shell hidden>
       <main class="invitation" id="invitation-content" data-invitation-content>
 
         <header class="tl-header" aria-label="Tittel">
@@ -81,18 +82,19 @@
 
         </div>
 
-        <section class="tl-modal" data-tl-modal hidden aria-hidden="true">
-          <div class="tl-modal__backdrop" data-tl-close></div>
-          <div class="tl-modal__panel" role="dialog" aria-modal="true" aria-labelledby="tl-modal-title">
-            <button class="tl-modal__close" type="button" data-tl-close aria-label="Lukk detaljvindu">Lukk</button>
-            <h2 class="tl-modal__title" id="tl-modal-title" data-tl-modal-title></h2>
-            <p class="tl-modal__content">Placeholder</p>
-          </div>
-        </section>
-
       </main>
     </div>
   </div>
+
+  <section class="tl-modal" data-tl-modal hidden aria-hidden="true">
+    <div class="tl-modal__backdrop" data-tl-close></div>
+    <div class="tl-modal__panel" role="dialog" aria-modal="true" aria-labelledby="tl-modal-title">
+      <button class="tl-modal__close" type="button" data-tl-close aria-label="Lukk detaljvindu">Lukk</button>
+      <h2 class="tl-modal__title" id="tl-modal-title" data-tl-modal-title></h2>
+      <p class="tl-modal__content">Placeholder</p>
+    </div>
+  </section>
+
   <script src="js/app.js"></script>
 </body>
 

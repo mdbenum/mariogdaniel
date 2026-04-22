@@ -1,97 +1,64 @@
 document.documentElement.classList.remove('no-js');
 document.documentElement.classList.add('js');
 
-const loaderMessage = document.querySelector('[data-loader-message]');
-const loaderSkip = document.querySelector('[data-loader-skip]');
 const invitationShell = document.querySelector('[data-invitation-shell]');
+const deliverySequence = document.querySelector('[data-delivery-sequence]');
 const reduceMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-const stepDurationMs = 1200;
 
-const loadingLines = [
-	'laster inn god stemning',
-	'laster inn dansefot',
-	'laster inn birras',
-	'laster inn smeigedager',
-	'laster inn fine folk',
-	'laster inn Åge og DDE',
-	'laster inn bryllupshelg!!'
-];
+let deliveryTimeoutIds = [];
 
-let loadingTimeoutIds = [];
-
-const clearLoaderTimeouts = () => {
-	loadingTimeoutIds.forEach((timeoutId) => {
+const clearDeliveryTimeouts = () => {
+	deliveryTimeoutIds.forEach((timeoutId) => {
 		window.clearTimeout(timeoutId);
 	});
-	loadingTimeoutIds = [];
+	deliveryTimeoutIds = [];
 };
 
-const showInvitation = () => {
-	document.body.classList.remove('is-loading');
+const revealInvitationContent = () => {
+	document.body.classList.add('is-content-revealed');
+	startTimelineAnimation();
+	startTimelineOnboarding();
+};
 
-	if (invitationShell) {
-		invitationShell.hidden = false;
+const runDeliverySequence = () => {
+	if (!deliverySequence || reduceMotionQuery.matches) {
+		revealInvitationContent();
+		return;
 	}
 
-	// Force a paint before adding is-loaded so CSS transitions fire
+	deliverySequence.hidden = false;
+	deliverySequence.classList.remove('is-exit');
 	requestAnimationFrame(() => {
-		requestAnimationFrame(() => {
-			document.body.classList.add('is-loaded');
-			startTimelineAnimation();
-			startTimelineOnboarding();
-		});
-	});
-};
-
-const hideInvitation = () => {
-	document.body.classList.add('is-loading');
-	document.body.classList.remove('is-loaded');
-
-	if (invitationShell) {
-		invitationShell.hidden = true;
-	}
-};
-
-const runLoadingSequence = () => {
-	if (!loaderMessage) {
-		return;
-	}
-
-	clearLoaderTimeouts();
-	hideInvitation();
-
-	if (reduceMotionQuery.matches) {
-		loaderMessage.textContent = loadingLines[loadingLines.length - 1];
-		showInvitation();
-		return;
-	}
-
-	loadingLines.forEach((line, index) => {
-		loadingTimeoutIds.push(
-			window.setTimeout(() => {
-				loaderMessage.textContent = line;
-			}, index * stepDurationMs)
-		);
+		deliverySequence.classList.add('is-playing');
 	});
 
-	loadingTimeoutIds.push(
+	deliveryTimeoutIds.push(
 		window.setTimeout(() => {
-			showInvitation();
-		}, loadingLines.length * stepDurationMs)
+			revealInvitationContent();
+		}, 2340)
+	);
+
+	deliveryTimeoutIds.push(
+		window.setTimeout(() => {
+			deliverySequence.classList.add('is-exit');
+		}, 2540)
+	);
+
+	deliveryTimeoutIds.push(
+		window.setTimeout(() => {
+			deliverySequence.hidden = true;
+			deliverySequence.classList.remove('is-playing', 'is-exit');
+		}, 2820)
 	);
 };
 
-
-if (loaderMessage) {
-	runLoadingSequence();
-}
-
-if (loaderSkip) {
-	loaderSkip.addEventListener('click', () => {
-		clearLoaderTimeouts();
-		showInvitation();
+// Start delivery sequence immediately on load
+requestAnimationFrame(() => {
+	requestAnimationFrame(() => {
+		document.body.classList.add('is-loaded');
+		runDeliverySequence();
 	});
-}
+});
 
 // ─── Countdown ───────────────────────────────────────────────
 const countdownEl = document.querySelector('[data-countdown]');
