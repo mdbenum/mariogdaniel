@@ -35,20 +35,20 @@ const runDeliverySequence = () => {
 	deliveryTimeoutIds.push(
 		window.setTimeout(() => {
 			revealInvitationContent();
-		}, 2340)
+		}, 1520)
 	);
 
 	deliveryTimeoutIds.push(
 		window.setTimeout(() => {
 			deliverySequence.classList.add('is-exit');
-		}, 2540)
+		}, 2140)
 	);
 
 	deliveryTimeoutIds.push(
 		window.setTimeout(() => {
 			deliverySequence.hidden = true;
 			deliverySequence.classList.remove('is-playing', 'is-exit');
-		}, 2820)
+		}, 2440)
 	);
 };
 
@@ -76,6 +76,7 @@ const timelineContainer = document.querySelector('[data-tl-container]');
 const timelineHint = document.querySelector('[data-tl-hint]');
 const tlModal = document.querySelector('[data-tl-modal]');
 const tlModalTitle = document.querySelector('[data-tl-modal-title]');
+const tlModalContent = document.querySelector('.tl-modal__content');
 const tlModalCloseTargets = document.querySelectorAll('[data-tl-close]');
 
 let timelineHintDismissed = false;
@@ -133,6 +134,24 @@ const openTimelineModal = (titleText) => {
 	}
 
 	tlModalTitle.textContent = titleText || 'Detaljer';
+	
+	// Set content based on title
+	if (titleText === 'Vi vil invitere DEG!') {
+		tlModalContent.textContent = 'Vi er heldige som har deg i livet vårt, og håper du vil være med og sette prikken over i-en på feiringen ❤️';
+	} else if (titleText === 'Gi oss beskjed om du kommer') {
+		tlModalContent.innerHTML = 'For å hjelpe oss med planleggingen, fyll ut <a href="https://forms.gle/placeholder" target="_blank" style="color: var(--accent); text-decoration: underline; font-weight: 600;">skjemaet</a> så snart du kan og senest før fristen.';
+	} else if (titleText === 'Bestill rom for overnatting') {
+		tlModalContent.innerHTML = 'Bryllupet vil holde til på et Resort i Farsund. Resortet har holdt av rom spesifikt for våre gjester til en rabattert pris ved bestilling før fristen. Bestill via <a href="https://placeholder-link.no" target="_blank" style="color: var(--accent); text-decoration: underline; font-weight: 600;">denne bookinglenken</a> for å sikre en plass og få rabattert pris. Dere må garantere bookingen med bankkort.<br><br><span class="tl-modal__note"><strong>OBS!</strong> Dere trenger ikke velge frokost som tillegg, det er allerede i romprisen!</span>';
+	} else if (titleText === 'Ankomst og bli kjent') {
+		tlModalContent.innerHTML = 'Fredag er satt av til å lande, finne seg til rette på resorten og la forventningene bygge seg opp til den store dagen. Etter hvert som gjestene ankommer, møtes vi til en uformell middag på brygga og en kveld som setter tonen for resten av feiringen.<br><br><span class="tl-modal__note"><strong>DRESSCODE:</strong> Uformelt pent</span>';
+	} else if (titleText === 'Vi gifter oss i Farsund!') {
+		tlModalContent.innerHTML = 'Lørdagen blir en dag vi har gledet oss lenge til, fylt av små og store øyeblikk fra første kaffekopp til siste dans:<br><br>• Rolig morgen med kaffekoppen ved sjøen<br>• Tur inn til sørlandsidylliske Farsund<br>• Vielse i Farsund kirke<br>• Mingling ved brygga<br>• Middag i låven<br>• Fest og feiring utover kvelden<br><br><span class="tl-modal__note"><strong>DRESSCODE:</strong> Pent bryllupsantrekk</span>';
+	} else if (titleText === 'Frokost og farvel') {
+		tlModalContent.innerHTML = 'Vi samles til frokost før det blir pakking og hjemreise.<br><br><strong style="color: var(--signal);">Status etter helgen:</strong> Vi er mann og kone, litt svimle av alt det fine vi har opplevd, og akkurat passe vemodige over at helgen allerede er over.';
+	} else {
+		tlModalContent.textContent = 'Placeholder';
+	}
+	
 	tlModal.hidden = false;
 	tlModal.setAttribute('aria-hidden', 'false');
 	requestAnimationFrame(() => {
@@ -183,26 +202,7 @@ document.addEventListener('keydown', (event) => {
 const tlStops = document.querySelectorAll('[data-tl-stop]');
 
 const startTimelineAnimation = () => {
-	if (!tlStops.length || reduceMotionQuery.matches) {
-		tlStops.forEach((stop) => stop.classList.add('is-visible'));
-		return;
-	}
-
-	const lineMs = 2000; // must match CSS transition duration
-	const timeline = document.querySelector('.timeline');
-	const timelineLine = document.querySelector('.timeline__line');
-	const timelineHeight = timelineLine ? timelineLine.offsetHeight : (timeline ? timeline.offsetHeight : 1);
-
 	tlStops.forEach((stop) => {
-		const marker = stop.querySelector('.timeline__marker');
-		const markerTop = marker
-			? marker.getBoundingClientRect().top - timeline.getBoundingClientRect().top
-			: stop.offsetTop;
-		const pct = Math.min(Math.max(markerTop / timelineHeight, 0), 1);
-		const delay = Math.round(lineMs * pct);
-		stop.style.transition = 'opacity 0.35s ease, transform 0.35s ease';
-		window.setTimeout(() => {
-			stop.classList.add('is-visible');
-		}, delay);
+		stop.classList.add('is-visible');
 	});
 };
