@@ -4,6 +4,7 @@ document.documentElement.classList.add('js');
 const invitationShell = document.querySelector('[data-invitation-shell]');
 const deliverySequence = document.querySelector('[data-delivery-sequence]');
 const deliveryPaper = document.querySelector('[data-delivery-paper]');
+const invitationContent = document.querySelector('[data-invitation-content]');
 const reduceMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
 const DELIVERY_PAPER_EXPAND_MS = 700;
 const DELIVERY_PAPER_REVEAL_PROGRESS = 0;
@@ -19,6 +20,10 @@ const clearDeliveryTimeouts = () => {
 	deliveryTimeoutIds = [];
 };
 
+const settleInvitationContent = () => {
+	document.body.classList.add('is-invitation-settled');
+};
+
 const revealInvitationContent = () => {
 	if (invitationHasRevealed) {
 		return;
@@ -28,6 +33,28 @@ const revealInvitationContent = () => {
 	document.body.classList.add('is-content-revealed');
 	startTimelineAnimation();
 	startTimelineOnboarding();
+
+	if (reduceMotionQuery.matches || !invitationContent) {
+		settleInvitationContent();
+		return;
+	}
+
+	const handleInvitationZoomEnd = (event) => {
+		if (event.target !== invitationContent || event.animationName !== 'invitation-zoom-in') {
+			return;
+		}
+
+		invitationContent.removeEventListener('animationend', handleInvitationZoomEnd);
+		settleInvitationContent();
+	};
+
+	invitationContent.addEventListener('animationend', handleInvitationZoomEnd);
+
+	deliveryTimeoutIds.push(
+		window.setTimeout(() => {
+			settleInvitationContent();
+		}, 2260)
+	);
 };
 
 const runDeliverySequence = () => {
