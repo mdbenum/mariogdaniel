@@ -658,16 +658,7 @@ body.is-content-revealed .invitation {
 	);
 	transform-origin: top center;
 	transform: scaleY(1);
-	opacity: 0;
-	transition: opacity 620ms ease;
-}
-
-body.is-content-revealed .timeline__line {
 	opacity: 1;
-}
-
-body.is-loaded:not(.is-content-revealed) .timeline__line {
-	opacity: 0;
 }
 
 .timeline__stop {
@@ -680,9 +671,9 @@ body.is-loaded:not(.is-content-revealed) .timeline__line {
 	padding-right: 0.5rem;
 	padding-bottom: 1.6rem;
 	border-radius: 16px;
-	opacity: 0;
-	transform: translateY(12px);
-	transition: opacity 0.5s ease, transform 0.5s ease, background-color 200ms ease, box-shadow 200ms ease;
+	opacity: 1;
+	transform: none;
+	transition: background-color 200ms ease, box-shadow 200ms ease;
 	cursor: pointer;
 }
 
@@ -731,10 +722,6 @@ body.is-loaded:not(.is-content-revealed) .timeline__line {
 	box-shadow: 0 0 0 7px rgba(156, 79, 61, 0.2);
 }
 
-.timeline__stop.is-visible {
-	opacity: 1;
-	transform: translateY(0);
-}
 
 .timeline__marker {
 	position: relative;
