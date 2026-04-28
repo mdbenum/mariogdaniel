@@ -3,9 +3,14 @@ document.documentElement.classList.add('js');
 
 const invitationShell = document.querySelector('[data-invitation-shell]');
 const deliverySequence = document.querySelector('[data-delivery-sequence]');
+const deliveryPaper = document.querySelector('[data-delivery-paper]');
 const reduceMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+const DELIVERY_PAPER_EXPAND_MS = 700;
+const DELIVERY_PAPER_REVEAL_PROGRESS = 0;
+const DELIVERY_PAPER_REVEAL_MS = 1520 + Math.round(DELIVERY_PAPER_EXPAND_MS * DELIVERY_PAPER_REVEAL_PROGRESS);
 
 let deliveryTimeoutIds = [];
+let invitationHasRevealed = false;
 
 const clearDeliveryTimeouts = () => {
 	deliveryTimeoutIds.forEach((timeoutId) => {
@@ -15,6 +20,11 @@ const clearDeliveryTimeouts = () => {
 };
 
 const revealInvitationContent = () => {
+	if (invitationHasRevealed) {
+		return;
+	}
+
+	invitationHasRevealed = true;
 	document.body.classList.add('is-content-revealed');
 	startTimelineAnimation();
 	startTimelineOnboarding();
@@ -32,10 +42,28 @@ const runDeliverySequence = () => {
 		deliverySequence.classList.add('is-playing');
 	});
 
+	if (deliveryPaper) {
+		const handlePaperExpandStart = (event) => {
+			if (event.animationName !== 'delivery-paper-expand') {
+				return;
+			}
+
+			deliveryPaper.removeEventListener('animationstart', handlePaperExpandStart);
+
+			deliveryTimeoutIds.push(
+				window.setTimeout(() => {
+					revealInvitationContent();
+				}, Math.round(DELIVERY_PAPER_EXPAND_MS * DELIVERY_PAPER_REVEAL_PROGRESS))
+			);
+		};
+
+		deliveryPaper.addEventListener('animationstart', handlePaperExpandStart);
+	}
+
 	deliveryTimeoutIds.push(
 		window.setTimeout(() => {
 			revealInvitationContent();
-		}, 1520)
+		}, DELIVERY_PAPER_REVEAL_MS)
 	);
 
 	deliveryTimeoutIds.push(
