@@ -89,6 +89,7 @@ const dismissTimelineHint = () => {
 	}
 
 	if (timelineContainer) {
+		timelineContainer.classList.remove('is-hinting');
 		timelineContainer.classList.remove('is-pulsing');
 	}
 };
@@ -101,7 +102,9 @@ const startTimelineOnboarding = () => {
 	if (timelineHint) {
 		timelineHint.classList.remove('is-hidden');
 	}
+	timelineContainer.classList.remove('is-hinting');
 	timelineContainer.classList.remove('is-pulsing');
+	timelineContainer.classList.add('is-hinting');
 
 	window.setTimeout(() => {
 		if (timelineHintDismissed) {
@@ -109,9 +112,10 @@ const startTimelineOnboarding = () => {
 		}
 
 		timelineContainer.classList.add('is-pulsing');
-	}, 280);
+	}, 1800);
 
 	window.setTimeout(() => {
+		timelineContainer.classList.remove('is-hinting');
 		timelineContainer.classList.remove('is-pulsing');
 	}, 5600);
 };
@@ -136,7 +140,7 @@ const openTimelineModal = (titleText) => {
 	tlModalTitle.textContent = titleText || 'Detaljer';
 	
 	// Set content based on title
-	if (titleText === 'Vi vil invitere DEG!') {
+	if (titleText === 'Vi vil invitere DEG') {
 		tlModalContent.textContent = 'Vi er heldige som har deg i livet vårt, og håper du vil være med og sette prikken over i-en på feiringen ❤️';
 	} else if (titleText === 'Gi oss beskjed om du kommer') {
 		tlModalContent.innerHTML = 'For å hjelpe oss med planleggingen, fyll ut <a href="https://forms.gle/placeholder" target="_blank" style="color: var(--accent); text-decoration: underline; font-weight: 600;">skjemaet</a> så snart du kan og senest før fristen.';
@@ -144,7 +148,7 @@ const openTimelineModal = (titleText) => {
 		tlModalContent.innerHTML = 'Bryllupet vil holde til på et Resort i Farsund. Resortet har holdt av rom spesifikt for våre gjester til en rabattert pris ved bestilling før fristen. Bestill via <a href="https://placeholder-link.no" target="_blank" style="color: var(--accent); text-decoration: underline; font-weight: 600;">denne bookinglenken</a> for å sikre en plass og få rabattert pris. Dere må garantere bookingen med bankkort.<br><br><span class="tl-modal__note"><strong>OBS!</strong> Dere trenger ikke velge frokost som tillegg, det er allerede i romprisen!</span>';
 	} else if (titleText === 'Ankomst og bli kjent') {
 		tlModalContent.innerHTML = 'Fredag er satt av til å lande, finne seg til rette på resorten og la forventningene bygge seg opp til den store dagen. Etter hvert som gjestene ankommer, møtes vi til en uformell middag på brygga og en kveld som setter tonen for resten av feiringen.<br><br><span class="tl-modal__note"><strong>DRESSCODE:</strong> Uformelt pent</span>';
-	} else if (titleText === 'Vi gifter oss i Farsund!') {
+	} else if (titleText === 'Vi gifter oss i Farsund') {
 		tlModalContent.innerHTML = 'Lørdagen blir en dag vi har gledet oss lenge til, fylt av små og store øyeblikk fra første kaffekopp til siste dans:<br><br>• Rolig morgen med kaffekoppen ved sjøen<br>• Tur inn til sørlandsidylliske Farsund<br>• Vielse i Farsund kirke<br>• Mingling ved brygga<br>• Middag i låven<br>• Fest og feiring utover kvelden<br><br><span class="tl-modal__note"><strong>DRESSCODE:</strong> Pent bryllupsantrekk</span>';
 	} else if (titleText === 'Frokost og farvel') {
 		tlModalContent.innerHTML = 'Vi samles til frokost før det blir pakking og hjemreise.<br><br><strong style="color: var(--signal);">Status etter helgen:</strong> Vi er mann og kone, litt svimle av alt det fine vi har opplevd, og akkurat passe vemodige over at helgen allerede er over.';
