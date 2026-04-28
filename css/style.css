@@ -321,10 +321,15 @@ a {
 	pointer-events: none;
 }
 
+body.is-delivery-running .invitation {
+	opacity: 1;
+	transform: translateY(0) scale(1);
+	animation: invitation-zoom-in 700ms cubic-bezier(0.22, 1, 0.36, 1) 1520ms both;
+	}
+
 body.is-content-revealed .invitation {
 	opacity: 1;
 	transform: translateY(0) scale(1);
-	animation: invitation-zoom-in 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
 	pointer-events: auto;
 }
 

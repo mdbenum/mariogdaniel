@@ -36,6 +36,7 @@ const runDeliverySequence = () => {
 		return;
 	}
 
+	document.body.classList.add('is-delivery-running');
 	deliverySequence.hidden = false;
 	deliverySequence.classList.remove('is-exit');
 	requestAnimationFrame(() => {
