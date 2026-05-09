@@ -12,7 +12,7 @@ const reduceMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
 const DELIVERY_PAPER_EXPAND_MS = 700;
 const DELIVERY_PAPER_REVEAL_PROGRESS = 0;
 const DELIVERY_PAPER_REVEAL_MS = 1520 + Math.round(DELIVERY_PAPER_EXPAND_MS * DELIVERY_PAPER_REVEAL_PROGRESS);
-const DELIVERY_ENVELOPE_FADE_DELAY_MS = 1240;
+const DELIVERY_ENVELOPE_FADE_DELAY_MS = 1300;
 
 let deliveryTimeoutIds = [];
 let invitationHasRevealed = false;
@@ -26,7 +26,7 @@ const clearDeliveryTimeouts = () => {
 
 const updateInvitationRevealOrigin = () => {
 	if (!deliveryPaper || !invitationContent) {
-		return;
+		return null;
 	}
 
 	const paperRect = deliveryPaper.getBoundingClientRect();
@@ -47,18 +47,18 @@ const updateInvitationRevealOrigin = () => {
 	}
 
 	if (!invitationRect.width || !invitationRect.height) {
-		return;
+		return null;
 	}
 
 	let anchorX = paperRect.left + paperRect.width / 2;
 	let anchorY = paperRect.top + paperRect.height / 2;
 	let paperStartScaleX = 0.22;
 	let paperStartScaleY = 0.3;
+	let paperStartWidth = (window.innerWidth + 4) * paperStartScaleX;
+	let paperStartHeight = (window.innerHeight + 4) * paperStartScaleY;
 
 	if (deliveryEnvelope) {
 		const envelopeRect = deliveryEnvelope.getBoundingClientRect();
-		anchorX = envelopeRect.left + envelopeRect.width / 2;
-		anchorY = envelopeRect.top + envelopeRect.height * 0.58;
 
 		// Keep the paper shape aligned to the envelope (3:2) across all viewports.
 		let desiredPaperWidth = envelopeRect.width * 1.1;
@@ -70,6 +70,8 @@ const updateInvitationRevealOrigin = () => {
 			desiredPaperWidth = desiredPaperHeight * 1.5;
 		}
 
+		paperStartWidth = desiredPaperWidth;
+		paperStartHeight = desiredPaperHeight;
 		paperStartScaleX = Math.min(1, Math.max(0.05, desiredPaperWidth / window.innerWidth));
 		paperStartScaleY = Math.min(1, Math.max(0.05, desiredPaperHeight / window.innerHeight));
 	}
@@ -78,6 +80,17 @@ const updateInvitationRevealOrigin = () => {
 	const originY = anchorY - invitationRect.top;
 	const startScaleX = Math.min(1, Math.max(0.05, paperRect.width / invitationRect.width));
 	const startScaleY = Math.min(1, Math.max(0.05, paperRect.height / invitationRect.height));
+	// Fit invitation to the paper's actual start size before paper expand begins.
+	const revealFitScale = Math.min(
+		1,
+		Math.max(0.04, Math.min(paperStartWidth / invitationRect.width, paperStartHeight / invitationRect.height))
+	);
+	const revealStartScaleX = revealFitScale;
+	const revealStartScaleY = revealFitScale;
+	const invitationCenterX = invitationRect.left + invitationRect.width / 2;
+	const invitationCenterY = invitationRect.top + invitationRect.height / 2;
+	const revealTranslateX = anchorX - invitationCenterX;
+	const revealTranslateY = anchorY - invitationCenterY;
 
 	const revealWidth = Math.max(40, paperRect.width);
 	const revealHeight = Math.max(40, paperRect.height);
@@ -92,6 +105,10 @@ const updateInvitationRevealOrigin = () => {
 	invitationContent.style.setProperty('--invitation-origin-y', `${originY}px`);
 	invitationContent.style.setProperty('--invitation-start-scale-x', `${startScaleX}`);
 	invitationContent.style.setProperty('--invitation-start-scale-y', `${startScaleY}`);
+	invitationContent.style.setProperty('--invitation-reveal-start-scale-x', `${revealStartScaleX}`);
+	invitationContent.style.setProperty('--invitation-reveal-start-scale-y', `${revealStartScaleY}`);
+	invitationContent.style.setProperty('--invitation-reveal-translate-x', `${revealTranslateX}px`);
+	invitationContent.style.setProperty('--invitation-reveal-translate-y', `${revealTranslateY}px`);
 
 	const revealTarget = document.documentElement;
 	revealTarget.style.setProperty('--delivery-reveal-origin-x', `${anchorX}px`);
@@ -102,6 +119,13 @@ const updateInvitationRevealOrigin = () => {
 	revealTarget.style.setProperty('--delivery-reveal-end-scale', `${revealEndScale}`);
 	revealTarget.style.setProperty('--delivery-paper-start-scale-x', `${paperStartScaleX}`);
 	revealTarget.style.setProperty('--delivery-paper-start-scale-y', `${paperStartScaleY}`);
+
+	return {
+		revealStartScaleX,
+		revealStartScaleY,
+		revealTranslateX,
+		revealTranslateY,
+	};
 };
 
 const createFireworks = () => {
@@ -147,6 +171,7 @@ const createFireworks = () => {
 };
 
 const settleInvitationContent = () => {
+	document.body.classList.remove('is-content-visible');
 	document.body.classList.add('is-invitation-settled');
 };
 
@@ -170,19 +195,62 @@ const revealInvitationContent = () => {
 
 	updateInvitationRevealOrigin();
 	invitationHasRevealed = true;
-	document.body.classList.add('is-content-revealed');
-	deliveryTimeoutIds.push(
-		window.setTimeout(() => {
-			createFireworks();
-		}, 260)
-	);
-	startTimelineAnimation();
-	startTimelineOnboarding();
+	document.body.classList.remove('is-content-visible');
+	document.body.classList.remove('is-content-revealed');
 
 	if (reduceMotionQuery.matches || !invitationContent) {
+		document.body.classList.add('is-content-visible', 'is-content-revealed');
 		settleInvitationContent();
 		return;
 	}
+
+	const startScaleX = Number.parseFloat(invitationContent.style.getPropertyValue('--invitation-reveal-start-scale-x')) || 0.12;
+	const startScaleY = Number.parseFloat(invitationContent.style.getPropertyValue('--invitation-reveal-start-scale-y')) || 0.12;
+	const startTranslateX = Number.parseFloat(invitationContent.style.getPropertyValue('--invitation-reveal-translate-x')) || 0;
+	const startTranslateY = Number.parseFloat(invitationContent.style.getPropertyValue('--invitation-reveal-translate-y')) || 0;
+
+	window.requestAnimationFrame(() => {
+		document.body.classList.add('is-content-visible');
+		window.requestAnimationFrame(() => {
+			invitationContent.style.transform = `translate(${startTranslateX}px, ${startTranslateY}px) scale(${startScaleX}, ${startScaleY})`;
+			invitationContent.style.opacity = '1';
+			void invitationContent.offsetWidth;
+
+			invitationContent.getAnimations().forEach((anim) => anim.cancel());
+			const revealAnimation = invitationContent.animate(
+				[
+					{
+						transform: `translate(${startTranslateX}px, ${startTranslateY}px) scale(${startScaleX}, ${startScaleY})`,
+						opacity: 1,
+					},
+					{
+						transform: 'translate(0px, 0px) scale(1, 1)',
+						opacity: 1,
+					},
+				],
+				{
+					duration: 900,
+					easing: 'cubic-bezier(0.2, 0.6, 0.2, 1)',
+					fill: 'forwards',
+				}
+			);
+
+			revealAnimation.finished
+				.then(() => {
+					document.body.classList.add('is-content-revealed');
+				})
+				.catch(() => {
+					// Ignore cancellation when a new reveal cycle restarts.
+				});
+		});
+	});
+	deliveryTimeoutIds.push(
+		window.setTimeout(() => {
+			createFireworks();
+		}, 1180)
+	);
+	startTimelineAnimation();
+	startTimelineOnboarding();
 
 	const handleInvitationZoomEnd = (event) => {
 		if (event.target !== invitationContent || event.animationName !== 'invitation-zoom-in') {
@@ -211,7 +279,7 @@ const runDeliverySequence = () => {
 	const tapPrompt = document.querySelector('[data-delivery-tap-prompt]');
 
 	document.body.classList.add('is-delivery-running');
-			document.body.classList.remove('is-background-revealing', 'is-content-revealed');
+			document.body.classList.remove('is-background-revealing', 'is-content-revealed', 'is-content-visible');
 	deliverySequence.hidden = false;
 	deliverySequence.classList.remove('is-exit');
 	deliverySequence.style.background = '';
@@ -238,7 +306,7 @@ const runDeliverySequence = () => {
 
 			hasClosedDelivery = true;
 			deliverySequence.hidden = true;
-			deliverySequence.classList.remove('is-playing', 'is-opening', 'is-paper-sliding', 'is-waiting', 'is-exit');
+			deliverySequence.classList.remove('is-playing', 'is-opening', 'is-paper-sliding', 'is-paper-expanding', 'is-waiting', 'is-exit');
 			if (deliveryEnvelope) deliveryEnvelope.classList.remove('is-fading');
 			document.body.classList.remove('is-background-revealing');
 			document.body.classList.remove('is-delivery-running');
@@ -259,7 +327,7 @@ const runDeliverySequence = () => {
 			}, 460)
 		);
 
-		// Fade out envelope 250ms before paper-expand starts
+		// Fade out envelope shortly before paper-expand starts
 		deliveryTimeoutIds.push(
 			window.setTimeout(() => {
 				if (deliveryEnvelope) deliveryEnvelope.classList.add('is-fading');
@@ -272,7 +340,9 @@ const runDeliverySequence = () => {
 					return;
 				}
 				deliveryPaper.removeEventListener('animationstart', handlePaperExpandStart);
+				deliverySequence.classList.add('is-paper-expanding');
 				startDeliveryBackgroundReveal();
+				revealInvitationContent();
 				const handlePaperExpandEnd = (endEvent) => {
 					if (endEvent.animationName !== 'delivery-paper-expand') {
 						return;
