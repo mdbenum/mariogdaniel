@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Mari Dahl Benum &amp; Daniel Jakobsen</title>
   <meta name="description" content="Mobilvennlig bryllupsinvitasjon til Mari Dahl Benum og Daniel Jakobsen i Farsund 2.-4. juli 2027.">
-  <link rel="stylesheet" href="css/style.css?v=20260428-18">
+  <link rel="stylesheet" href="css/style.css?v=20260509-103">
 </head>
 
 <body>
@@ -14,12 +14,17 @@
     <div class="invitation-shell" data-invitation-shell>
       <div class="delivery-sequence" data-delivery-sequence aria-hidden="true">
         <div class="delivery__envelope" data-delivery-envelope>
+          <div class="delivery__tap-prompt" data-delivery-tap-prompt>Trykk for å åpne</div>
           <div class="delivery__paper" data-delivery-paper></div>
           <div class="delivery__body"></div>
           <div class="delivery__front"></div>
           <div class="delivery__flap"></div>
+          <span class="delivery__flap-seal" aria-hidden="true"></span>
         </div>
       </div>
+      <div class="delivery__bg-reveal" data-delivery-bg-reveal aria-hidden="true"></div>
+
+      <div class="fireworks-container" data-fireworks-container aria-hidden="true"></div>
 
       <main class="invitation" id="invitation-content" data-invitation-content>
 
@@ -38,31 +43,31 @@
         <div class="timeline" aria-label="Program og praktisk info" data-tl-container>
           <div class="timeline__line" aria-hidden="true"></div>
 
-          <div class="timeline__stop" data-tl-stop data-tl-open data-tl-first>
+          <div class="timeline__stop timeline__stop--left" data-tl-stop data-tl-open data-tl-first>
             <div class="timeline__marker" aria-hidden="true"></div>
             <div class="timeline__body">
               <span class="timeline__label">April 2026</span>
-              <p class="timeline__heading">Vi vil invitere <strong>DEG</strong></p>
+              <p class="timeline__heading">Du er invitert</p>
             </div>
           </div>
 
-          <div class="timeline__stop" data-tl-stop data-tl-open>
+          <div class="timeline__stop timeline__stop--right timeline__stop--rsvp" data-tl-stop data-tl-open>
             <div class="timeline__marker" aria-hidden="true"></div>
             <div class="timeline__body">
               <span class="timeline__label timeline__label--deadline"><span class="timeline__deadline-chip">Frist</span><span class="timeline__deadline-date">1. JUNI 2026</span></span>
-              <p class="timeline__heading">Gi oss beskjed om du kommer</p>
+              <p class="timeline__heading">Send RSVP</p>
             </div>
           </div>
 
-          <div class="timeline__stop" data-tl-stop data-tl-open>
+          <div class="timeline__stop timeline__stop--left" data-tl-stop data-tl-open>
             <div class="timeline__marker" aria-hidden="true"></div>
             <div class="timeline__body">
-              <span class="timeline__label timeline__label--deadline"><span class="timeline__deadline-chip">Frist</span><span class="timeline__deadline-date">31. JANUAR 2027</span></span>
-              <p class="timeline__heading">Bestill rom for overnatting</p>
+              <span class="timeline__label timeline__label--deadline"><span class="timeline__deadline-chip">Frist</span><span class="timeline__deadline-date">31. JAN 2027</span></span>
+              <p class="timeline__heading">Bestill overnatting</p>
             </div>
           </div>
 
-          <div class="timeline__stop" data-tl-stop data-tl-open>
+          <div class="timeline__stop timeline__stop--right" data-tl-stop data-tl-open>
             <div class="timeline__marker" aria-hidden="true"></div>
             <div class="timeline__body">
               <span class="timeline__label">Fredag 2. juli 2027</span>
@@ -70,7 +75,7 @@
             </div>
           </div>
 
-          <div class="timeline__stop timeline__stop--main" data-tl-stop data-tl-open>
+          <div class="timeline__stop timeline__stop--left timeline__stop--main" data-tl-stop data-tl-open>
             <div class="timeline__marker timeline__marker--main" aria-hidden="true"></div>
             <div class="timeline__body">
               <span class="timeline__label">Lørdag 3. juli 2027</span>
@@ -78,11 +83,11 @@
             </div>
           </div>
 
-          <div class="timeline__stop" data-tl-stop data-tl-open>
+          <div class="timeline__stop timeline__stop--right" data-tl-stop data-tl-open>
             <div class="timeline__marker" aria-hidden="true"></div>
             <div class="timeline__body">
               <span class="timeline__label">Søndag 4. juli 2027</span>
-              <p class="timeline__heading">Frokost og farvel</p>
+              <p class="timeline__heading">Frokost og på gjensyn</p>
             </div>
           </div>
 
@@ -90,6 +95,8 @@
 
       </main>
     </div>
+
+    <div class="invitation-texture-overlay" aria-hidden="true"></div>
   </div>
 
   <section class="tl-modal" data-tl-modal hidden aria-hidden="true">
@@ -101,7 +108,7 @@
     </div>
   </section>
 
-  <script src="js/app.js?v=20260428-18"></script>
+  <script src="js/app.js?v=20260509-32"></script>
 </body>
 
 </html>
