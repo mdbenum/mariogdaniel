@@ -965,7 +965,7 @@ body.is-content-revealed .delivery__bg-reveal {
 }
 
 .timeline[data-tl-container].show-hint .timeline__stop[data-tl-first] .timeline__marker::after {
-	content: "trykk for mer info";
+	content: "TRYKK FOR INFO";
 	position: absolute;
 	top: auto;
 	bottom: calc(100% + 3rem);
