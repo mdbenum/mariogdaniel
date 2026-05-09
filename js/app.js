@@ -210,11 +210,11 @@ const revealInvitationContent = () => {
 	const startTranslateY = Number.parseFloat(invitationContent.style.getPropertyValue('--invitation-reveal-translate-y')) || 0;
 
 	window.requestAnimationFrame(() => {
+		invitationContent.style.transform = `translate(${startTranslateX}px, ${startTranslateY}px) scale(${startScaleX}, ${startScaleY})`;
+		invitationContent.style.opacity = '1';
+		void invitationContent.offsetWidth;
 		document.body.classList.add('is-content-visible');
 		window.requestAnimationFrame(() => {
-			invitationContent.style.transform = `translate(${startTranslateX}px, ${startTranslateY}px) scale(${startScaleX}, ${startScaleY})`;
-			invitationContent.style.opacity = '1';
-			void invitationContent.offsetWidth;
 
 			invitationContent.getAnimations().forEach((anim) => anim.cancel());
 			const revealAnimation = invitationContent.animate(
