@@ -238,16 +238,16 @@ const revealInvitationContent = () => {
 	invitationContent.getAnimations().forEach((anim) => anim.cancel());
 	invitationContent.style.transition = 'none';
 	invitationContent.style.transform = `translate(${stableStartTranslateX}px, ${stableStartTranslateY}px) scale(${stableStartScaleX}, ${stableStartScaleY})`;
-	invitationContent.style.opacity = '1';
+	invitationContent.style.opacity = '0';
 	document.body.classList.add('is-content-visible');
 	invitationContent.getBoundingClientRect();
 	invitationContent.addEventListener('transitionend', handleRevealTransitionEnd);
 
-	// Double rAF ensures Safari mobile commits the start-transform to the render pipeline
-	// before the transition begins, preventing a jump or snap.
+	// Double rAF: first frame commits start-transform, second starts transition + makes visible simultaneously.
 	window.requestAnimationFrame(() => {
 		window.requestAnimationFrame(() => {
-			invitationContent.style.transition = `transform ${revealDurationMs}ms cubic-bezier(0.22, 1, 0.36, 1)`;
+			invitationContent.style.transition = `transform ${revealDurationMs}ms cubic-bezier(0.22, 1, 0.36, 1), opacity 80ms ease`;
+			invitationContent.style.opacity = '1';
 			invitationContent.style.transform = 'translate(0px, 0px) scale(1, 1)';
 		});
 	});

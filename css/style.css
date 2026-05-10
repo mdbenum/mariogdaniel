@@ -24,6 +24,26 @@
 @media (max-width: 41.99rem) {
 	:root {
 		--mobile-type-scale: 1.22;
+		--bg: #efdfcc;
+		--bg-strong: #e3cdb8;
+		--surface: rgba(255, 247, 240, 0.9);
+		--surface-strong: #fff6ee;
+		--text: #2f1d19;
+		--muted: #6f534a;
+		--accent: #944637;
+		--accent-soft: #bc765d;
+		--signal: #ad5f49;
+		--signal-soft: rgba(173, 95, 73, 0.18);
+		--signal-border: rgba(173, 95, 73, 0.38);
+	}
+
+	body {
+		background:
+			radial-gradient(ellipse at 12% 8%, rgba(255, 228, 198, 0.5), transparent 34%),
+			radial-gradient(ellipse at 88% 6%, rgba(190, 111, 79, 0.22), transparent 28%),
+			radial-gradient(ellipse at 70% 92%, rgba(212, 154, 108, 0.18), transparent 32%),
+			radial-gradient(ellipse at 18% 80%, rgba(99, 114, 63, 0.1), transparent 24%),
+			linear-gradient(162deg, #f8eee0 0%, #f3e2cd 32%, #ead6be 66%, #dfc3a9 100%);
 	}
 }
 
