@@ -465,6 +465,33 @@ const tlModalTitle = document.querySelector('[data-tl-modal-title]');
 const tlModalContent = document.querySelector('.tl-modal__content');
 const tlModalCloseTargets = document.querySelectorAll('[data-tl-close]');
 
+const syncMainStopMobileSpacing = () => {
+	const mainStopBody = document.querySelector('.timeline__stop--main.timeline__stop--left .timeline__body');
+	const mainStopHeading = document.querySelector('.timeline__stop--main.timeline__stop--left .timeline__heading');
+	if (!mainStopBody) {
+		return;
+	}
+
+	const isMobileViewport = window.matchMedia('(max-width: 41.99rem)').matches;
+	if (isMobileViewport) {
+		mainStopBody.style.setProperty('right', 'calc(50% + (var(--timeline-marker-size) / 2) + var(--timeline-column-gap) + 0.45rem)', 'important');
+		if (mainStopHeading) {
+			mainStopHeading.style.setProperty('padding-right', '0.4rem', 'important');
+			mainStopHeading.style.transform = 'translateX(-0.1rem)';
+		}
+		return;
+	}
+
+	mainStopBody.style.removeProperty('right');
+	if (mainStopHeading) {
+		mainStopHeading.style.removeProperty('padding-right');
+		mainStopHeading.style.transform = '';
+	}
+};
+
+syncMainStopMobileSpacing();
+window.addEventListener('resize', syncMainStopMobileSpacing);
+
 let timelineHintDismissed = false;
 
 const dismissTimelineHint = () => {
