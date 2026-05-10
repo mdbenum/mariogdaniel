@@ -243,9 +243,13 @@ const revealInvitationContent = () => {
 	invitationContent.getBoundingClientRect();
 	invitationContent.addEventListener('transitionend', handleRevealTransitionEnd);
 
+	// Double rAF ensures Safari mobile commits the start-transform to the render pipeline
+	// before the transition begins, preventing a jump or snap.
 	window.requestAnimationFrame(() => {
-		invitationContent.style.transition = `transform ${revealDurationMs}ms cubic-bezier(0.22, 1, 0.36, 1)`;
-		invitationContent.style.transform = 'translate(0px, 0px) scale(1, 1)';
+		window.requestAnimationFrame(() => {
+			invitationContent.style.transition = `transform ${revealDurationMs}ms cubic-bezier(0.22, 1, 0.36, 1)`;
+			invitationContent.style.transform = 'translate(0px, 0px) scale(1, 1)';
+		});
 	});
 	startTimelineAnimation();
 	startTimelineOnboarding();
