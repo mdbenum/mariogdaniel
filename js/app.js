@@ -13,6 +13,9 @@ const DELIVERY_PAPER_EXPAND_MS = 700;
 const DELIVERY_PAPER_REVEAL_PROGRESS = 0;
 const DELIVERY_PAPER_REVEAL_MS = 1520 + Math.round(DELIVERY_PAPER_EXPAND_MS * DELIVERY_PAPER_REVEAL_PROGRESS);
 const DELIVERY_ENVELOPE_FADE_DELAY_MS = 1300;
+const DELIVERY_CLOSE_AFTER_EXPAND_DELAY_MS = 260;
+const DELIVERY_BACKGROUND_REVEAL_DELAY_MS = 900;
+const DELIVERY_EXIT_FADE_MS = 260;
 
 let deliveryTimeoutIds = [];
 let invitationHasRevealed = false;
@@ -193,7 +196,7 @@ const revealInvitationContent = () => {
 		return;
 	}
 
-	updateInvitationRevealOrigin();
+	// Geometry is prepared right before reveal; avoid recalculating here to reduce flicker risk.
 	invitationHasRevealed = true;
 	document.body.classList.remove('is-content-visible');
 	document.body.classList.remove('is-content-revealed');
@@ -211,61 +214,61 @@ const revealInvitationContent = () => {
 	const isMobileViewport = window.matchMedia('(max-width: 820px)').matches;
 	const devicePixelRatio = Math.max(1, window.devicePixelRatio || 1);
 	const snapToDevicePixel = (value) => Math.round(value * devicePixelRatio) / devicePixelRatio;
+	const stableStartScaleX = startScaleX;
+	const stableStartScaleY = startScaleY;
 	const stableStartTranslateX = isMobileViewport ? snapToDevicePixel(startTranslateX) : startTranslateX;
 	const stableStartTranslateY = isMobileViewport ? snapToDevicePixel(startTranslateY) : startTranslateY;
 
 	window.requestAnimationFrame(() => {
-		invitationContent.style.transform = `translate(${stableStartTranslateX}px, ${stableStartTranslateY}px) scale(${startScaleX}, ${startScaleY})`;
+		invitationContent.style.transform = `translate(${stableStartTranslateX}px, ${stableStartTranslateY}px) scale(${stableStartScaleX}, ${stableStartScaleY})`;
 		invitationContent.style.opacity = '1';
 		void invitationContent.offsetWidth;
-		document.body.classList.add('is-content-visible');
+		if (!isMobileViewport) {
+			document.body.classList.add('is-content-visible');
+		}
 		window.requestAnimationFrame(() => {
+			const runRevealAnimation = () => {
+				invitationContent.getAnimations().forEach((anim) => anim.cancel());
+				const revealKeyframes = isMobileViewport
+					? [
+						{
+							transform: `translate(${stableStartTranslateX}px, ${stableStartTranslateY}px) scale(${stableStartScaleX}, ${stableStartScaleY})`,
+							opacity: 1,
+						},
+						{
+							transform: 'translate(0px, 0px) scale(1, 1)',
+							opacity: 1,
+						},
+					]
+					: [
+						{
+							transform: `translate(${stableStartTranslateX}px, ${stableStartTranslateY}px) scale(${stableStartScaleX}, ${stableStartScaleY})`,
+							opacity: 1,
+						},
+						{
+							transform: 'translate(0px, 0px) scale(1, 1)',
+							opacity: 1,
+						},
+					];
+				const revealAnimation = invitationContent.animate(
+					revealKeyframes,
+					{
+						duration: isMobileViewport ? 700 : 740,
+						easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+						fill: 'forwards',
+					}
+				);
 
-			invitationContent.getAnimations().forEach((anim) => anim.cancel());
-			const revealKeyframes = isMobileViewport
-				? [
-					{
-						transform: `translate(${stableStartTranslateX}px, ${stableStartTranslateY}px) scale(${startScaleX}, ${startScaleY})`,
-						opacity: 1,
-						offset: 0,
-					},
-					{
-						transform: `translate(${stableStartTranslateX}px, ${stableStartTranslateY}px) scale(${startScaleX}, ${startScaleY})`,
-						opacity: 1,
-						offset: 0.1,
-					},
-					{
-						transform: 'translate(0px, 0px) scale(1, 1)',
-						opacity: 1,
-						offset: 1,
-					},
-				]
-				: [
-					{
-						transform: `translate(${stableStartTranslateX}px, ${stableStartTranslateY}px) scale(${startScaleX}, ${startScaleY})`,
-						opacity: 1,
-					},
-					{
-						transform: 'translate(0px, 0px) scale(1, 1)',
-						opacity: 1,
-					},
-				];
-			const revealAnimation = invitationContent.animate(
-				revealKeyframes,
-				{
-					duration: isMobileViewport ? 980 : 900,
-					easing: isMobileViewport ? 'cubic-bezier(0.16, 0.72, 0.18, 1)' : 'cubic-bezier(0.2, 0.6, 0.2, 1)',
-					fill: 'forwards',
-				}
-			);
+				revealAnimation.finished
+					.then(() => {
+						document.body.classList.add('is-content-revealed');
+					})
+					.catch(() => {
+						// Ignore cancellation when a new reveal cycle restarts.
+					});
+			};
 
-			revealAnimation.finished
-				.then(() => {
-					document.body.classList.add('is-content-revealed');
-				})
-				.catch(() => {
-					// Ignore cancellation when a new reveal cycle restarts.
-				});
+			runRevealAnimation();
 		});
 	});
 	deliveryTimeoutIds.push(
@@ -364,21 +367,26 @@ const runDeliverySequence = () => {
 					return;
 				}
 				deliveryPaper.removeEventListener('animationstart', handlePaperExpandStart);
+				updateInvitationRevealOrigin();
 				deliverySequence.classList.add('is-paper-expanding');
-				startDeliveryBackgroundReveal();
+				deliveryTimeoutIds.push(
+					window.setTimeout(() => {
+						startDeliveryBackgroundReveal();
+					}, DELIVERY_BACKGROUND_REVEAL_DELAY_MS)
+				);
 				revealInvitationContent();
 				const handlePaperExpandEnd = (endEvent) => {
 					if (endEvent.animationName !== 'delivery-paper-expand') {
 						return;
 					}
 					deliveryPaper.removeEventListener('animationend', handlePaperExpandEnd);
-					deliverySequence.style.background = 'transparent';
 					revealInvitationContent();
-					window.requestAnimationFrame(() => {
-						window.requestAnimationFrame(() => {
+					deliverySequence.classList.add('is-exit');
+					deliveryTimeoutIds.push(
+						window.setTimeout(() => {
 							closeDeliverySequence();
-						});
-					});
+						}, Math.max(DELIVERY_CLOSE_AFTER_EXPAND_DELAY_MS, DELIVERY_EXIT_FADE_MS))
+					);
 				};
 				deliveryPaper.addEventListener('animationend', handlePaperExpandEnd);
 			};

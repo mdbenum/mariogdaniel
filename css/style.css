@@ -406,10 +406,14 @@ body.is-content-revealed .invitation {
 	opacity: 1;
 }
 
-body.is-background-revealing .delivery__bg-reveal,
-body.is-content-revealed .delivery__bg-reveal {
+body.is-background-revealing .delivery__bg-reveal {
 	opacity: 1;
 	animation: delivery-background-reveal 760ms cubic-bezier(0.2, 0.9, 0.2, 1) forwards;
+}
+
+body.is-content-revealed .delivery__bg-reveal {
+	opacity: 1;
+	animation: none;
 }
 
 .delivery__envelope {
@@ -714,7 +718,7 @@ body.is-content-revealed .delivery__bg-reveal {
 
 .delivery-sequence.is-exit {
 	opacity: 0;
-	transition: none;
+	transition: opacity 260ms ease;
 }
 
 /* ─── Header ─── */
