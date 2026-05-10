@@ -212,12 +212,10 @@ const revealInvitationContent = () => {
 	const startTranslateX = Number.parseFloat(invitationContent.style.getPropertyValue('--invitation-reveal-translate-x')) || 0;
 	const startTranslateY = Number.parseFloat(invitationContent.style.getPropertyValue('--invitation-reveal-translate-y')) || 0;
 	const isMobileViewport = window.matchMedia('(max-width: 820px)').matches;
-	const devicePixelRatio = Math.max(1, window.devicePixelRatio || 1);
-	const snapToDevicePixel = (value) => Math.round(value * devicePixelRatio) / devicePixelRatio;
 	const stableStartScaleX = startScaleX;
 	const stableStartScaleY = startScaleY;
-	const stableStartTranslateX = isMobileViewport ? snapToDevicePixel(startTranslateX) : startTranslateX;
-	const stableStartTranslateY = isMobileViewport ? snapToDevicePixel(startTranslateY) : startTranslateY;
+	const stableStartTranslateX = startTranslateX;
+	const stableStartTranslateY = startTranslateY;
 
 	window.requestAnimationFrame(() => {
 		invitationContent.style.transform = `translate(${stableStartTranslateX}px, ${stableStartTranslateY}px) scale(${stableStartScaleX}, ${stableStartScaleY})`;
