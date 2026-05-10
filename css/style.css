@@ -35,6 +35,7 @@
 		--signal: #ad5f49;
 		--signal-soft: rgba(173, 95, 73, 0.18);
 		--signal-border: rgba(173, 95, 73, 0.38);
+		color-scheme: light;
 	}
 
 	body {
@@ -44,6 +45,27 @@
 			radial-gradient(ellipse at 70% 92%, rgba(212, 154, 108, 0.18), transparent 32%),
 			radial-gradient(ellipse at 18% 80%, rgba(99, 114, 63, 0.1), transparent 24%),
 			linear-gradient(162deg, #f8eee0 0%, #f3e2cd 32%, #ead6be 66%, #dfc3a9 100%);
+		filter: saturate(1.15) brightness(1.08);
+	}
+
+	.timeline__label {
+		font-size: calc(0.73rem * var(--mobile-type-scale));
+	}
+
+	.timeline__heading {
+		font-size: calc(clamp(1.15rem, 4vw, 1.85rem) * var(--mobile-type-scale));
+	}
+
+	.timeline__hint {
+		font-size: calc(0.73rem * var(--mobile-type-scale));
+	}
+
+	.timeline__detail {
+		font-size: 1.08rem;
+	}
+
+	.timeline__deadline-chip {
+		font-size: 0.76rem;
 	}
 }
 
@@ -740,6 +762,7 @@ body.is-content-revealed .delivery__bg-reveal {
 
 @media (max-width: 41.99rem) {
 	.delivery__paper {
+		width: calc(100vw + 48px);
 		--delivery-paper-out-shift: 2.6rem;
 		--delivery-paper-start-clip-top: 4%;
 		--delivery-paper-start-clip-bottom: 28%;
@@ -748,11 +771,11 @@ body.is-content-revealed .delivery__bg-reveal {
 
 .delivery__tap-prompt {
 	position: absolute;
-	top: -3.2rem;
+	top: -4rem;
 	left: 50%;
 	transform: translateX(-50%);
 	font-family: "Great Vibes", "Cormorant Garamond", serif;
-	font-size: 1.8rem;
+	font-size: 2.2rem;
 	font-weight: 400;
 	color: rgba(255, 248, 241, 0.95);
 	text-shadow: 0 2px 10px rgba(60, 20, 10, 0.4);
@@ -811,6 +834,7 @@ body.is-content-revealed .delivery__bg-reveal {
 	overflow: visible;
 	display: flex;
 	justify-content: center;
+	align-items: center;
 	padding: 0 0 0;
 	text-align: center;
 }
@@ -823,6 +847,7 @@ body.is-content-revealed .delivery__bg-reveal {
 	position: absolute;
 	left: 0;
 	right: 0;
+	width: auto;
 	bottom: 1.8rem;
 	z-index: 1;
 	padding: 3.1rem 1rem 1.2rem;
@@ -839,7 +864,7 @@ body.is-content-revealed .delivery__bg-reveal {
 	display: block;
 	width: 100%;
 	font-family: "Great Vibes", "Cormorant Garamond", serif;
-	font-size: calc(clamp(2.1rem, 7.8vw, 3.5rem) * var(--mobile-type-scale));
+	font-size: calc(clamp(2.3rem, 8.4vw, 3.8rem) * var(--mobile-type-scale));
 	font-weight: 400;
 	line-height: 1;
 	color: var(--accent);
@@ -931,7 +956,7 @@ body.is-content-revealed .delivery__bg-reveal {
 
 .timeline__hint {
 	margin: 0 0 0.85rem;
-	font-size: 0.74rem;
+	font-size: calc(0.58rem * var(--mobile-type-scale));
 	font-weight: 700;
 	letter-spacing: 0.1em;
 	text-transform: uppercase;
@@ -955,6 +980,7 @@ body.is-content-revealed .delivery__bg-reveal {
 	width: min(100%, var(--content-width));
 	margin-left: auto;
 	margin-right: auto;
+	transform: translateX(var(--timeline-axis-offset-x, 0px));
 	padding: var(--timeline-padding-top) 0 0;
 }
 
@@ -1598,6 +1624,13 @@ body.tl-modal-open .tl-modal__panel {
 		padding-top: 2.1rem;
 	}
 
+	.tl-header,
+	.timeline {
+		width: min(100%, var(--content-width));
+		margin-left: auto;
+		margin-right: auto;
+	}
+
 	.timeline {
 		margin-top: -0.58rem;
 		--timeline-padding-top: 0.2rem;
@@ -1612,21 +1645,31 @@ body.tl-modal-open .tl-modal__panel {
 	}
 
 	.tl-header__copy {
+		left: 50%;
+		right: auto;
+		width: var(--content-width);
+		transform: translateX(-50%);
 		bottom: 3.9rem;
 		padding: 2.9rem 1.4rem 1.3rem;
 	}
 
 	.tl-header__title {
-		font-size: clamp(2.55rem, 4.7vw, 3.95rem);
+		font-size: clamp(2.85rem, 5.3vw, 4.35rem);
+		width: 100%;
+		max-width: none;
+		position: static;
+		left: auto;
+		transform: none;
 	}
 
 	.delivery__tap-prompt {
-		font-size: 2rem;
+		font-size: 2.6rem;
 	}
 
 	.tl-header__visual {
 		width: min(38vw, 18rem);
 		height: calc(min(38vw, 18rem) * 1.1);
+		transform: none;
 		--tl-header-portrait-crop-bottom: 5rem;
 		--tl-header-portrait-fade-height: 11rem;
 	}

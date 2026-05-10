@@ -6,6 +6,7 @@ const deliverySequence = document.querySelector('[data-delivery-sequence]');
 const deliveryEnvelope = document.querySelector('[data-delivery-envelope]');
 const deliveryPaper = document.querySelector('[data-delivery-paper]');
 const invitationContent = document.querySelector('[data-invitation-content]');
+const headerVisual = document.querySelector('.tl-header__visual');
 const reduceMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
 const DELIVERY_PAPER_EXPAND_MS = 740;
 const DELIVERY_ENVELOPE_FADE_DELAY_MS = 1300;
@@ -16,6 +17,30 @@ let deliveryTimeoutIds = [];
 let invitationHasRevealed = false;
 let revealViewportSnapshot = null;
 let latestRevealGeometry = null;
+
+const syncTimelineAxisToHeader = () => {
+	if (!headerVisual || !invitationContent) {
+		return;
+	}
+
+	const timelineEl = invitationContent.querySelector('.timeline');
+	const timelineLineEl = invitationContent.querySelector('.timeline__line');
+	if (!timelineEl || !timelineLineEl) {
+		return;
+	}
+
+	const currentOffset = Number.parseFloat(getComputedStyle(timelineEl).getPropertyValue('--timeline-axis-offset-x')) || 0;
+	const headerCenterX = headerVisual.getBoundingClientRect().left + (headerVisual.getBoundingClientRect().width / 2);
+	const lineCenterX = timelineLineEl.getBoundingClientRect().left + (timelineLineEl.getBoundingClientRect().width / 2);
+	const unshiftedLineCenterX = lineCenterX - currentOffset;
+	const nextOffset = headerCenterX - unshiftedLineCenterX;
+
+	if (!Number.isFinite(nextOffset)) {
+		return;
+	}
+
+	timelineEl.style.setProperty('--timeline-axis-offset-x', `${nextOffset.toFixed(3)}px`);
+};
 
 const getLiveViewportSize = () => {
 	if (window.visualViewport) {
@@ -204,6 +229,7 @@ const revealInvitationContent = () => {
 
 	if (reduceMotionQuery.matches || !invitationContent) {
 		document.body.classList.add('is-content-visible', 'is-content-revealed');
+		syncTimelineAxisToHeader();
 		settleInvitationContent();
 		return;
 	}
@@ -246,6 +272,7 @@ const revealInvitationContent = () => {
 	// Double rAF: first frame commits start-transform, second starts transition + makes visible simultaneously.
 	window.requestAnimationFrame(() => {
 		window.requestAnimationFrame(() => {
+			syncTimelineAxisToHeader();
 			invitationContent.style.transition = `transform ${revealDurationMs}ms cubic-bezier(0.22, 1, 0.36, 1), opacity 80ms ease`;
 			invitationContent.style.opacity = '1';
 			invitationContent.style.transform = 'translate(0px, 0px) scale(1, 1)';
@@ -399,6 +426,13 @@ requestAnimationFrame(() => {
 	requestAnimationFrame(() => {
 		document.body.classList.add('is-loaded');
 		runDeliverySequence();
+		syncTimelineAxisToHeader();
+	});
+});
+
+window.addEventListener('resize', () => {
+	window.requestAnimationFrame(() => {
+		syncTimelineAxisToHeader();
 	});
 });
 
