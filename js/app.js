@@ -14,6 +14,29 @@ const DELIVERY_EXIT_FADE_MS = 260;
 
 let deliveryTimeoutIds = [];
 let invitationHasRevealed = false;
+let revealViewportSnapshot = null;
+
+const getLiveViewportSize = () => {
+	if (window.visualViewport) {
+		return {
+			width: window.visualViewport.width,
+			height: window.visualViewport.height,
+		};
+	}
+
+	return {
+		width: window.innerWidth,
+		height: window.innerHeight,
+	};
+};
+
+const getStableViewportSize = () => {
+	if (revealViewportSnapshot) {
+		return revealViewportSnapshot;
+	}
+
+	return getLiveViewportSize();
+};
 
 const clearDeliveryTimeouts = () => {
 	deliveryTimeoutIds.forEach((timeoutId) => {
@@ -26,6 +49,8 @@ const updateInvitationRevealOrigin = () => {
 	if (!deliveryPaper || !invitationContent) {
 		return null;
 	}
+
+	const viewport = getStableViewportSize();
 
 	const paperRect = deliveryPaper.getBoundingClientRect();
 	const savedInlineStyle = invitationContent.getAttribute('style');
@@ -52,8 +77,8 @@ const updateInvitationRevealOrigin = () => {
 	let anchorY = paperRect.top + paperRect.height / 2;
 	let paperStartScaleX = 0.22;
 	let paperStartScaleY = 0.3;
-	let paperStartWidth = (window.innerWidth + 4) * paperStartScaleX;
-	let paperStartHeight = (window.innerHeight + 4) * paperStartScaleY;
+	let paperStartWidth = (viewport.width + 4) * paperStartScaleX;
+	let paperStartHeight = (viewport.height + 4) * paperStartScaleY;
 
 	if (deliveryEnvelope) {
 		const envelopeRect = deliveryEnvelope.getBoundingClientRect();
@@ -71,8 +96,8 @@ const updateInvitationRevealOrigin = () => {
 
 		paperStartWidth = desiredPaperWidth;
 		paperStartHeight = desiredPaperHeight;
-		paperStartScaleX = Math.min(1, Math.max(0.05, desiredPaperWidth / window.innerWidth));
-		paperStartScaleY = Math.min(1, Math.max(0.05, desiredPaperHeight / window.innerHeight));
+		paperStartScaleX = Math.min(1, Math.max(0.05, desiredPaperWidth / Math.max(1, viewport.width)));
+		paperStartScaleY = Math.min(1, Math.max(0.05, desiredPaperHeight / Math.max(1, viewport.height)));
 	}
 
 	const originX = anchorX - invitationRect.left;
@@ -93,8 +118,8 @@ const updateInvitationRevealOrigin = () => {
 
 	const revealWidth = Math.max(40, paperRect.width);
 	const revealHeight = Math.max(40, paperRect.height);
-	const neededHalfWidth = Math.max(anchorX, window.innerWidth - anchorX) + 64;
-	const neededHalfHeight = Math.max(anchorY, window.innerHeight - anchorY) + 64;
+	const neededHalfWidth = Math.max(anchorX, viewport.width - anchorX) + 64;
+	const neededHalfHeight = Math.max(anchorY, viewport.height - anchorY) + 64;
 	const scaleForWidth = neededHalfWidth / (revealWidth / 2);
 	const scaleForHeight = neededHalfHeight / (revealHeight / 2);
 	const revealEndScale = Math.max(scaleForWidth, scaleForHeight);
@@ -119,8 +144,8 @@ const updateInvitationRevealOrigin = () => {
 	revealTarget.style.setProperty('--delivery-paper-start-scale-x', `${paperStartScaleX}`);
 	revealTarget.style.setProperty('--delivery-paper-start-scale-y', `${paperStartScaleY}`);
 
-	const viewportWidth = window.visualViewport ? window.visualViewport.width : window.innerWidth;
-	const viewportHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+	const viewportWidth = viewport.width;
+	const viewportHeight = viewport.height;
 	const paperBaseWidth = viewportWidth + 32;
 	const paperBaseHeight = viewportHeight + 32;
 	const paperTargetWidth = viewportWidth + 96;
@@ -141,14 +166,13 @@ const updateInvitationRevealOrigin = () => {
 const settleInvitationContent = () => {
 	document.body.classList.remove('is-content-visible');
 	document.body.classList.add('is-invitation-settled');
+	revealViewportSnapshot = null;
 };
 
 const startDeliveryBackgroundReveal = () => {
 	if (!deliverySequence) {
 		return;
 	}
-
-	updateInvitationRevealOrigin();
 };
 
 const revealInvitationContent = () => {
@@ -235,6 +259,8 @@ const runDeliverySequence = () => {
 		revealInvitationContent();
 		return;
 	}
+
+	revealViewportSnapshot = getLiveViewportSize();
 
 	const tapPrompt = document.querySelector('[data-delivery-tap-prompt]');
 
@@ -461,7 +487,7 @@ const openTimelineModal = (titleText) => {
 	} else if (titleText === 'Send RSVP') {
 		tlModalContent.innerHTML = 'For å hjelpe oss med planleggingen, vennligst fyll ut <a href="https://docs.google.com/forms/d/e/1FAIpQLSd9r-k_LBBe_fsEtJyv0wgeYjwVV7h2oyjlzLnIMInHHFg-iA/viewform?usp=publish-editor" target="_blank" style="color: var(--accent); text-decoration: underline; font-weight: 600;">skjemaet</a> så snart du kan og senest før fristen.';
 	} else if (titleText === 'Bestill overnatting') {
-		tlModalContent.innerHTML = 'Vi feirer anledningen på Farsund Resort og gleder oss til en fantastisk helg med dere! Resortet har holdt av rom spesifikt for våre gjester til en rabattert pris ved bestilling før fristen. Bestill via <a href="https://app.mews.com/distributor/67ceb772-ed80-4e54-be12-b36000895667?mewsAvailabilityBlockId=a7580c55-5661-4769-b0f1-b3ec00d78da3&mewsStart=2027-07-02&mewsEnd=2027-07-04" target="_blank" style="color: var(--accent); text-decoration: underline; font-weight: 600;">denne bookinglenken</a> for å sikre en plass og få rabattert pris. Du må garantere bookingen med bankkort.<br><br><span class="tl-modal__note"><strong>OBS:</strong> Dere trenger ikke velge frokost som tillegg, det er allerede i romprisen!</span>';
+		tlModalContent.innerHTML = 'Vi feirer anledningen på Farsund Resort og gleder oss til en fantastisk helg med deg! Resortet har holdt av rom spesifikt for våre gjester til en rabattert pris ved bestilling før fristen. Bestill via <a href="https://app.mews.com/distributor/67ceb772-ed80-4e54-be12-b36000895667?mewsAvailabilityBlockId=a7580c55-5661-4769-b0f1-b3ec00d78da3&mewsStart=2027-07-02&mewsEnd=2027-07-04" target="_blank" style="color: var(--accent); text-decoration: underline; font-weight: 600;">denne bookinglenken</a> for å sikre en plass og få rabattert pris. Du må garantere bookingen med bankkort.<br><br><span class="tl-modal__note"><strong>OBS:</strong> Dere trenger ikke velge frokost som tillegg, det er allerede i romprisen!</span>';
 	} else if (titleText === 'Velkommen') {
 		tlModalContent.innerHTML = 'Fredag er satt av til å lande, finne seg til rette på resorten og la forventningene bygge seg opp til den store dagen. Gjestene ankommer resortet utover kvelden, men vi håper så mange som mulig rekker å være på plass til middag på brygga kl 18:00. Mat bestilles i restauranten. Ankommer du senere? Ikke stress, bare kom og finn oss på brygga når du er fremme.<br><br><span class="tl-modal__facts"><span class="tl-modal__fact"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true" class="tl-modal__fact-icon"><path fill="currentColor" d="M12 2c-3.87 0-7 3.13-7 7 0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5z"/></svg><span class="tl-modal__fact-value"><a href="https://www.google.com/maps/place/Farsund+Resort/@58.0835472,6.9578762,17z/data=!3m1!4b1!4m9!3m8!1s0x4637795705a3f047:0x71c8a567d02f387d!5m2!4m1!1i2!8m2!3d58.0835472!4d6.9604511!16s%2Fg%2F1tcx5ld6?entry=ttu&g_ep=EgoyMDI2MDUwNi4wIKXMDSoASAFQAw%3D%3D" target="_blank">Farsund Resort</a></span></span><span class="tl-modal__fact"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true" class="tl-modal__fact-icon"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M4.5 14.5 12 11l7.5 3.5a1.9 1.9 0 0 1-.8 3.6H5.3a1.9 1.9 0 0 1-.8-3.6Z"/><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M12 11V7.8"/><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M12 7.8a2.6 2.6 0 1 1 2.6-2.6"/></svg><span class="tl-modal__fact-value">Akkurat det som måtte passe deg</span></span></span>';
 	} else if (titleText === 'Bryllupsdagen') {
