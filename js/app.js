@@ -104,10 +104,16 @@ const updateInvitationRevealOrigin = () => {
 	const originY = anchorY - invitationRect.top;
 	const startScaleX = Math.min(1, Math.max(0.05, paperRect.width / invitationRect.width));
 	const startScaleY = Math.min(1, Math.max(0.05, paperRect.height / invitationRect.height));
-	// Fit invitation to the paper's actual start size before paper expand begins.
+	// Fit reveal to paper using an effective height so long page content does not collapse into a tiny framed thumbnail on mobile.
+	const effectiveInvitationHeight = Math.min(
+		invitationRect.height,
+		Math.max(viewport.height * 1.08, invitationRect.width * 1.25)
+	);
+	const fitByWidth = paperStartWidth / invitationRect.width;
+	const fitByEffectiveHeight = paperStartHeight / effectiveInvitationHeight;
 	const revealFitScale = Math.min(
-		0.34,
-		Math.max(0.04, Math.min(paperStartWidth / invitationRect.width, paperStartHeight / invitationRect.height))
+		0.42,
+		Math.max(0.12, Math.min(fitByWidth, fitByEffectiveHeight))
 	);
 	const revealStartScaleX = revealFitScale;
 	const revealStartScaleY = revealFitScale;
