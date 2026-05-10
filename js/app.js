@@ -219,7 +219,7 @@ const revealInvitationContent = () => {
 
 	window.requestAnimationFrame(() => {
 		invitationContent.style.transform = `translate(${stableStartTranslateX}px, ${stableStartTranslateY}px) scale(${stableStartScaleX}, ${stableStartScaleY})`;
-		invitationContent.style.opacity = '1';
+		invitationContent.style.opacity = isMobileViewport ? '0' : '1';
 		void invitationContent.offsetWidth;
 		if (!isMobileViewport) {
 			document.body.classList.add('is-content-visible');
@@ -227,15 +227,20 @@ const revealInvitationContent = () => {
 		window.requestAnimationFrame(() => {
 			const runRevealAnimation = () => {
 				invitationContent.getAnimations().forEach((anim) => anim.cancel());
+				const mobileRevealFraction = 0.08;
+				const mobileMidScaleX = stableStartScaleX + (1 - stableStartScaleX) * mobileRevealFraction;
+				const mobileMidScaleY = stableStartScaleY + (1 - stableStartScaleY) * mobileRevealFraction;
+				const mobileMidTranslateX = stableStartTranslateX * (1 - mobileRevealFraction);
+				const mobileMidTranslateY = stableStartTranslateY * (1 - mobileRevealFraction);
 				const revealKeyframes = isMobileViewport
 					? [
 						{
 							transform: `translate(${stableStartTranslateX}px, ${stableStartTranslateY}px) scale(${stableStartScaleX}, ${stableStartScaleY})`,
-							opacity: 1,
+							opacity: 0,
 							offset: 0,
 						},
 						{
-							transform: `translate(${stableStartTranslateX}px, ${stableStartTranslateY}px) scale(${stableStartScaleX}, ${stableStartScaleY})`,
+							transform: `translate(${mobileMidTranslateX}px, ${mobileMidTranslateY}px) scale(${mobileMidScaleX}, ${mobileMidScaleY})`,
 							opacity: 1,
 							offset: 0.02,
 						},
