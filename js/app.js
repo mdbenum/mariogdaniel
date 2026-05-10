@@ -15,6 +15,7 @@ const DELIVERY_EXIT_FADE_MS = 260;
 let deliveryTimeoutIds = [];
 let invitationHasRevealed = false;
 let revealViewportSnapshot = null;
+let latestRevealGeometry = null;
 
 const getLiveViewportSize = () => {
 	if (window.visualViewport) {
@@ -161,18 +162,22 @@ const updateInvitationRevealOrigin = () => {
 	revealTarget.style.setProperty('--delivery-paper-end-scale-x', `${paperEndScaleX}`);
 	revealTarget.style.setProperty('--delivery-paper-end-scale-y', `${paperEndScaleY}`);
 
-	return {
+	const geometry = {
 		revealStartScaleX,
 		revealStartScaleY,
 		revealTranslateX,
 		revealTranslateY,
 	};
+
+	latestRevealGeometry = geometry;
+	return geometry;
 };
 
 const settleInvitationContent = () => {
 	document.body.classList.remove('is-content-visible');
 	document.body.classList.add('is-invitation-settled');
 	revealViewportSnapshot = null;
+	latestRevealGeometry = null;
 };
 
 const startDeliveryBackgroundReveal = () => {
@@ -187,6 +192,12 @@ const revealInvitationContent = () => {
 	}
 
 	// Geometry is prepared right before reveal; avoid recalculating here to reduce flicker risk.
+	const geometry = latestRevealGeometry || updateInvitationRevealOrigin();
+	if (!geometry) {
+		window.requestAnimationFrame(revealInvitationContent);
+		return;
+	}
+
 	invitationHasRevealed = true;
 	document.body.classList.remove('is-content-visible');
 	document.body.classList.remove('is-content-revealed');
@@ -197,14 +208,10 @@ const revealInvitationContent = () => {
 		return;
 	}
 
-	const startScaleX = Number.parseFloat(invitationContent.style.getPropertyValue('--invitation-reveal-start-scale-x')) || 0.12;
-	const startScaleY = Number.parseFloat(invitationContent.style.getPropertyValue('--invitation-reveal-start-scale-y')) || 0.12;
-	const startTranslateX = Number.parseFloat(invitationContent.style.getPropertyValue('--invitation-reveal-translate-x')) || 0;
-	const startTranslateY = Number.parseFloat(invitationContent.style.getPropertyValue('--invitation-reveal-translate-y')) || 0;
-	const stableStartScaleX = startScaleX;
-	const stableStartScaleY = startScaleY;
-	const stableStartTranslateX = startTranslateX;
-	const stableStartTranslateY = startTranslateY;
+	const stableStartScaleX = geometry.revealStartScaleX;
+	const stableStartScaleY = geometry.revealStartScaleY;
+	const stableStartTranslateX = geometry.revealTranslateX;
+	const stableStartTranslateY = geometry.revealTranslateY;
 	const revealDurationMs = DELIVERY_PAPER_EXPAND_MS;
 	let revealFinished = false;
 
@@ -268,7 +275,7 @@ const runDeliverySequence = () => {
 	if (deliveryEnvelope) {
 		deliveryEnvelope.classList.remove('is-fading');
 	}
-	updateInvitationRevealOrigin();
+	latestRevealGeometry = updateInvitationRevealOrigin();
 	requestAnimationFrame(() => {
 		deliverySequence.classList.add('is-playing');
 	});
@@ -340,12 +347,12 @@ const runDeliverySequence = () => {
 					return;
 				}
 				deliveryPaper.removeEventListener('animationstart', handlePaperExpandStart);
-				updateInvitationRevealOrigin();
+					latestRevealGeometry = updateInvitationRevealOrigin();
 				if (invitationContent && !invitationHasRevealed) {
-					const preScaleX = Number.parseFloat(invitationContent.style.getPropertyValue('--invitation-reveal-start-scale-x')) || 0.12;
-					const preScaleY = Number.parseFloat(invitationContent.style.getPropertyValue('--invitation-reveal-start-scale-y')) || 0.12;
-					const preTranslateX = Number.parseFloat(invitationContent.style.getPropertyValue('--invitation-reveal-translate-x')) || 0;
-					const preTranslateY = Number.parseFloat(invitationContent.style.getPropertyValue('--invitation-reveal-translate-y')) || 0;
+						const preScaleX = latestRevealGeometry ? latestRevealGeometry.revealStartScaleX : 0.2;
+						const preScaleY = latestRevealGeometry ? latestRevealGeometry.revealStartScaleY : 0.2;
+						const preTranslateX = latestRevealGeometry ? latestRevealGeometry.revealTranslateX : 0;
+						const preTranslateY = latestRevealGeometry ? latestRevealGeometry.revealTranslateY : 0;
 					invitationContent.style.transform = `translate(${preTranslateX}px, ${preTranslateY}px) scale(${preScaleX}, ${preScaleY})`;
 					invitationContent.style.opacity = '0';
 				}
