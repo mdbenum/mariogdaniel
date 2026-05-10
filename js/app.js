@@ -1,20 +1,169 @@
 document.documentElement.classList.remove('no-js');
 document.documentElement.classList.add('js');
 
+const HEADER_VIDEO_START_TRIM_S = 0.22;
+const HEADER_VIDEO_LOOP_TRIM_S = 0.36;
+const HEADER_VIDEO_PLAYBACK_RATE = 0.85;
+const HEADER_VIDEO_STABILIZE_X_MAX_PX = 4.2;
+const HEADER_VIDEO_MAX_COMPLETED_REPETITIONS = 3;
+const HEADER_VIDEO_STOP_PROGRESS_IN_NEXT_REPETITION = 0.67;
+
+// Use one deterministic loop controller so every repetition cuts at the same point.
+const headerVideo = document.querySelector('.tl-header__portrait');
+if (headerVideo instanceof HTMLVideoElement) {
+	headerVideo.loop = false;
+	headerVideo.removeAttribute('loop');
+	headerVideo.defaultPlaybackRate = HEADER_VIDEO_PLAYBACK_RATE;
+	headerVideo.playbackRate = HEADER_VIDEO_PLAYBACK_RATE;
+
+	let headerVideoLoopFrameId = 0;
+	let headerVideoResetPending = false;
+	let headerVideoLoopCallbackActive = false;
+	let headerVideoStartAligned = false;
+	let headerVideoRepetitionCount = 0;
+	let headerVideoFrozen = false;
+
+	const getLoopStartTime = () => {
+		if (!Number.isFinite(headerVideo.duration)) {
+			return 0;
+		}
+
+		const loopEndTime = Math.max(0, headerVideo.duration - HEADER_VIDEO_LOOP_TRIM_S);
+		return Math.min(HEADER_VIDEO_START_TRIM_S, Math.max(0, loopEndTime - 0.08));
+	};
+
+	const checkHeaderVideoLoop = () => {
+		if (headerVideoFrozen) {
+			return;
+		}
+
+		if (
+			headerVideo.paused ||
+			headerVideo.ended ||
+			headerVideo.seeking ||
+			!Number.isFinite(headerVideo.duration) ||
+			headerVideo.duration <= HEADER_VIDEO_LOOP_TRIM_S
+		) {
+			return;
+		}
+
+		const loopEndTime = headerVideo.duration - HEADER_VIDEO_LOOP_TRIM_S;
+		const loopStartTime = getLoopStartTime();
+		const loopSpan = Math.max(0.001, loopEndTime - loopStartTime);
+		const loopProgress = Math.min(1, Math.max(0, (headerVideo.currentTime - loopStartTime) / loopSpan));
+		const stabilizeX = ((1 - Math.cos(loopProgress * Math.PI * 2)) / 2) * HEADER_VIDEO_STABILIZE_X_MAX_PX;
+
+		headerVideo.style.setProperty('--header-video-stabilize-x', `${stabilizeX}px`);
+
+		if (
+			!headerVideoFrozen &&
+			headerVideoRepetitionCount >= HEADER_VIDEO_MAX_COMPLETED_REPETITIONS &&
+			loopProgress >= HEADER_VIDEO_STOP_PROGRESS_IN_NEXT_REPETITION
+		) {
+			headerVideoFrozen = true;
+			headerVideo.pause();
+			return;
+		}
+
+		if (!headerVideoResetPending && headerVideo.currentTime >= loopEndTime) {
+			headerVideoResetPending = true;
+			headerVideoRepetitionCount += 1;
+
+			headerVideo.currentTime = loopStartTime;
+			headerVideo.style.setProperty('--header-video-stabilize-x', '0px');
+			const playPromise = headerVideo.play();
+			if (playPromise && typeof playPromise.catch === 'function') {
+				playPromise.catch(() => {});
+			}
+		}
+
+		if (headerVideo.currentTime < loopStartTime + 0.08) {
+			headerVideoResetPending = false;
+		}
+	};
+
+	const queueHeaderVideoLoopCheck = () => {
+		if (typeof headerVideo.requestVideoFrameCallback === 'function') {
+			if (headerVideoLoopCallbackActive) {
+				return;
+			}
+
+			headerVideoLoopCallbackActive = true;
+			headerVideo.requestVideoFrameCallback(() => {
+				headerVideoLoopCallbackActive = false;
+				checkHeaderVideoLoop();
+				if (!headerVideoFrozen) {
+					queueHeaderVideoLoopCheck();
+				}
+			});
+			return;
+		}
+
+		scheduleHeaderVideoLoopCheck();
+	};
+
+	const scheduleHeaderVideoLoopCheck = () => {
+		if (headerVideoLoopFrameId) {
+			return;
+		}
+
+		headerVideoLoopFrameId = window.requestAnimationFrame(() => {
+			headerVideoLoopFrameId = 0;
+			checkHeaderVideoLoop();
+
+			if (!headerVideoFrozen) {
+				scheduleHeaderVideoLoopCheck();
+			}
+		});
+	};
+
+	headerVideo.addEventListener('loadedmetadata', () => {
+		headerVideoFrozen = false;
+		headerVideoRepetitionCount = 0;
+		headerVideo.defaultPlaybackRate = HEADER_VIDEO_PLAYBACK_RATE;
+		headerVideo.playbackRate = HEADER_VIDEO_PLAYBACK_RATE;
+		headerVideo.style.transition = '';
+		headerVideo.style.opacity = '';
+		headerVideo.style.setProperty('--header-video-stabilize-x', '0px');
+		if (!headerVideoStartAligned) {
+			headerVideo.currentTime = getLoopStartTime();
+			headerVideoStartAligned = true;
+		}
+		queueHeaderVideoLoopCheck();
+	});
+	headerVideo.addEventListener('play', () => {
+		if (headerVideoFrozen) {
+			headerVideo.pause();
+			return;
+		}
+
+		headerVideo.playbackRate = HEADER_VIDEO_PLAYBACK_RATE;
+		queueHeaderVideoLoopCheck();
+	});
+	headerVideo.addEventListener('seeking', queueHeaderVideoLoopCheck);
+	headerVideo.addEventListener('ended', () => {
+		headerVideoResetPending = false;
+		headerVideo.currentTime = getLoopStartTime();
+		headerVideo.style.setProperty('--header-video-stabilize-x', '0px');
+		const playPromise = headerVideo.play();
+		if (playPromise && typeof playPromise.catch === 'function') {
+			playPromise.catch(() => {});
+		}
+		queueHeaderVideoLoopCheck();
+	});
+
+	queueHeaderVideoLoopCheck();
+}
+
 const invitationShell = document.querySelector('[data-invitation-shell]');
 const deliverySequence = document.querySelector('[data-delivery-sequence]');
-const deliveryBgReveal = document.querySelector('[data-delivery-bg-reveal]');
 const deliveryEnvelope = document.querySelector('[data-delivery-envelope]');
 const deliveryPaper = document.querySelector('[data-delivery-paper]');
 const invitationContent = document.querySelector('[data-invitation-content]');
-const fireworksContainer = document.querySelector('[data-fireworks-container]');
 const reduceMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-const DELIVERY_PAPER_EXPAND_MS = 700;
-const DELIVERY_PAPER_REVEAL_PROGRESS = 0;
-const DELIVERY_PAPER_REVEAL_MS = 1520 + Math.round(DELIVERY_PAPER_EXPAND_MS * DELIVERY_PAPER_REVEAL_PROGRESS);
+const DELIVERY_PAPER_EXPAND_MS = 740;
 const DELIVERY_ENVELOPE_FADE_DELAY_MS = 1300;
 const DELIVERY_CLOSE_AFTER_EXPAND_DELAY_MS = 260;
-const DELIVERY_BACKGROUND_REVEAL_DELAY_MS = 900;
 const DELIVERY_EXIT_FADE_MS = 260;
 
 let deliveryTimeoutIds = [];
@@ -62,10 +211,11 @@ const updateInvitationRevealOrigin = () => {
 
 	if (deliveryEnvelope) {
 		const envelopeRect = deliveryEnvelope.getBoundingClientRect();
+		const isMobileViewport = window.matchMedia('(max-width: 41.99rem)').matches;
 
 		// Keep the paper shape aligned to the envelope (3:2) across all viewports.
-		let desiredPaperWidth = envelopeRect.width * 1.1;
-		let desiredPaperHeight = desiredPaperWidth / 1.5;
+		let desiredPaperWidth = envelopeRect.width * (isMobileViewport ? 0.82 : 1.1);
+		let desiredPaperHeight = (desiredPaperWidth / 1.5) * 1.08;
 		const maxPaperHeight = envelopeRect.height * 0.92;
 
 		if (desiredPaperHeight > maxPaperHeight) {
@@ -85,7 +235,7 @@ const updateInvitationRevealOrigin = () => {
 	const startScaleY = Math.min(1, Math.max(0.05, paperRect.height / invitationRect.height));
 	// Fit invitation to the paper's actual start size before paper expand begins.
 	const revealFitScale = Math.min(
-		1,
+		0.34,
 		Math.max(0.04, Math.min(paperStartWidth / invitationRect.width, paperStartHeight / invitationRect.height))
 	);
 	const revealStartScaleX = revealFitScale;
@@ -123,54 +273,23 @@ const updateInvitationRevealOrigin = () => {
 	revealTarget.style.setProperty('--delivery-paper-start-scale-x', `${paperStartScaleX}`);
 	revealTarget.style.setProperty('--delivery-paper-start-scale-y', `${paperStartScaleY}`);
 
+	const viewportWidth = window.visualViewport ? window.visualViewport.width : window.innerWidth;
+	const viewportHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+	const paperBaseWidth = viewportWidth + 32;
+	const paperBaseHeight = viewportHeight + 32;
+	const paperTargetWidth = viewportWidth + 96;
+	const paperTargetHeight = viewportHeight + 96;
+	const paperEndScaleX = Math.max(1, paperTargetWidth / Math.max(1, paperBaseWidth));
+	const paperEndScaleY = Math.max(1, paperTargetHeight / Math.max(1, paperBaseHeight));
+	revealTarget.style.setProperty('--delivery-paper-end-scale-x', `${paperEndScaleX}`);
+	revealTarget.style.setProperty('--delivery-paper-end-scale-y', `${paperEndScaleY}`);
+
 	return {
 		revealStartScaleX,
 		revealStartScaleY,
 		revealTranslateX,
 		revealTranslateY,
 	};
-};
-
-const createFireworks = () => {
-	if (!fireworksContainer || reduceMotionQuery.matches) {
-		return;
-	}
-
-	const colors = ['#9c4f3d', '#c98368', '#b96c56', '#7a6159', '#34211d'];
-	const particleCount = 100;
-	const centerX = window.innerWidth / 2;
-	const centerY = window.innerHeight * 0.25;
-
-	fireworksContainer.innerHTML = '';
-
-	for (let i = 0; i < particleCount; i++) {
-		const particle = document.createElement('div');
-		particle.className = 'firework-particle';
-		particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-		
-		const angle = (-60 + Math.random() * 300) * (Math.PI / 180);
-		const distance = 150 + Math.random() * 200;
-		const tx = Math.cos(angle) * distance;
-		const ty = -Math.sin(angle) * distance;
-
-		particle.style.left = centerX + 'px';
-		particle.style.top = centerY + 'px';
-		particle.style.setProperty('--tx', `${tx}px`);
-		particle.style.setProperty('--ty', `${ty}px`);
-		particle.style.animationDelay = (Math.random() * 0.3) + 's';
-
-		fireworksContainer.appendChild(particle);
-	}
-
-	requestAnimationFrame(() => {
-		fireworksContainer.classList.add('is-active');
-	});
-
-	deliveryTimeoutIds.push(
-		window.setTimeout(() => {
-			fireworksContainer.classList.remove('is-active');
-		}, 3500)
-	);
 };
 
 const settleInvitationContent = () => {
@@ -183,12 +302,7 @@ const startDeliveryBackgroundReveal = () => {
 		return;
 	}
 
-	if (document.body.classList.contains('is-background-revealing')) {
-		return;
-	}
-
 	updateInvitationRevealOrigin();
-	document.body.classList.add('is-background-revealing');
 };
 
 const revealInvitationContent = () => {
@@ -211,81 +325,44 @@ const revealInvitationContent = () => {
 	const startScaleY = Number.parseFloat(invitationContent.style.getPropertyValue('--invitation-reveal-start-scale-y')) || 0.12;
 	const startTranslateX = Number.parseFloat(invitationContent.style.getPropertyValue('--invitation-reveal-translate-x')) || 0;
 	const startTranslateY = Number.parseFloat(invitationContent.style.getPropertyValue('--invitation-reveal-translate-y')) || 0;
-	const isMobileViewport = window.matchMedia('(max-width: 820px)').matches;
 	const stableStartScaleX = startScaleX;
 	const stableStartScaleY = startScaleY;
 	const stableStartTranslateX = startTranslateX;
 	const stableStartTranslateY = startTranslateY;
 
+	invitationContent.getAnimations().forEach((anim) => anim.cancel());
+	invitationContent.style.transform = `translate(${stableStartTranslateX}px, ${stableStartTranslateY}px) scale(${stableStartScaleX}, ${stableStartScaleY})`;
+	invitationContent.style.opacity = '1';
+	document.body.classList.add('is-content-visible');
+
 	window.requestAnimationFrame(() => {
-		invitationContent.style.transform = `translate(${stableStartTranslateX}px, ${stableStartTranslateY}px) scale(${stableStartScaleX}, ${stableStartScaleY})`;
-		invitationContent.style.opacity = isMobileViewport ? '0' : '1';
-		void invitationContent.offsetWidth;
-		if (!isMobileViewport) {
-			document.body.classList.add('is-content-visible');
-		}
-		window.requestAnimationFrame(() => {
-			const runRevealAnimation = () => {
-				invitationContent.getAnimations().forEach((anim) => anim.cancel());
-				const mobileRevealFraction = 0.08;
-				const mobileMidScaleX = stableStartScaleX + (1 - stableStartScaleX) * mobileRevealFraction;
-				const mobileMidScaleY = stableStartScaleY + (1 - stableStartScaleY) * mobileRevealFraction;
-				const mobileMidTranslateX = stableStartTranslateX * (1 - mobileRevealFraction);
-				const mobileMidTranslateY = stableStartTranslateY * (1 - mobileRevealFraction);
-				const revealKeyframes = isMobileViewport
-					? [
-						{
-							transform: `translate(${stableStartTranslateX}px, ${stableStartTranslateY}px) scale(${stableStartScaleX}, ${stableStartScaleY})`,
-							opacity: 0,
-							offset: 0,
-						},
-						{
-							transform: `translate(${mobileMidTranslateX}px, ${mobileMidTranslateY}px) scale(${mobileMidScaleX}, ${mobileMidScaleY})`,
-							opacity: 1,
-							offset: 0.02,
-						},
-						{
-							transform: 'translate(0px, 0px) scale(1, 1)',
-							opacity: 1,
-							offset: 1,
-						},
-					]
-					: [
-						{
-							transform: `translate(${stableStartTranslateX}px, ${stableStartTranslateY}px) scale(${stableStartScaleX}, ${stableStartScaleY})`,
-							opacity: 1,
-						},
-						{
-							transform: 'translate(0px, 0px) scale(1, 1)',
-							opacity: 1,
-						},
-					];
-				const revealAnimation = invitationContent.animate(
-					revealKeyframes,
-					{
-						duration: isMobileViewport ? 700 : 740,
-						easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
-						fill: 'forwards',
-					}
-				);
+		const revealKeyframes = [
+			{
+				transform: `translate(${stableStartTranslateX}px, ${stableStartTranslateY}px) scale(${stableStartScaleX}, ${stableStartScaleY})`,
+				opacity: 1,
+			},
+			{
+				transform: 'translate(0px, 0px) scale(1, 1)',
+				opacity: 1,
+			},
+		];
+		const revealAnimation = invitationContent.animate(
+			revealKeyframes,
+			{
+				duration: DELIVERY_PAPER_EXPAND_MS,
+				easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+				fill: 'forwards',
+			}
+		);
 
-				revealAnimation.finished
-					.then(() => {
-						document.body.classList.add('is-content-revealed');
-					})
-					.catch(() => {
-						// Ignore cancellation when a new reveal cycle restarts.
-					});
-			};
-
-			runRevealAnimation();
-		});
+		revealAnimation.finished
+			.then(() => {
+				document.body.classList.add('is-content-revealed');
+			})
+			.catch(() => {
+				// Ignore cancellation when a new reveal cycle restarts.
+			});
 	});
-	deliveryTimeoutIds.push(
-		window.setTimeout(() => {
-			createFireworks();
-		}, 1180)
-	);
 	startTimelineAnimation();
 	startTimelineOnboarding();
 
@@ -318,9 +395,11 @@ const runDeliverySequence = () => {
 	document.body.classList.add('is-delivery-running');
 			document.body.classList.remove('is-background-revealing', 'is-content-revealed', 'is-content-visible');
 	deliverySequence.hidden = false;
-	deliverySequence.classList.remove('is-exit');
+	deliverySequence.classList.remove('is-exit', 'is-complete');
 	deliverySequence.style.background = '';
-	if (deliveryEnvelope) deliveryEnvelope.classList.remove('is-fading');
+	if (deliveryEnvelope) {
+		deliveryEnvelope.classList.remove('is-fading');
+	}
 	updateInvitationRevealOrigin();
 	requestAnimationFrame(() => {
 		deliverySequence.classList.add('is-playing');
@@ -342,8 +421,24 @@ const runDeliverySequence = () => {
 			}
 
 			hasClosedDelivery = true;
-			deliverySequence.hidden = true;
+
+			// Lock paper at full viewport coverage BEFORE class changes to prevent any one-frame stripe gap
+			if (deliveryPaper) {
+				deliveryPaper.style.position = 'fixed';
+				deliveryPaper.style.inset = '-16px';
+				deliveryPaper.style.width = 'auto';
+				deliveryPaper.style.height = 'auto';
+				deliveryPaper.style.transform = 'none';
+				deliveryPaper.style.clipPath = 'none';
+				deliveryPaper.style.borderRadius = '0';
+				deliveryPaper.style.opacity = '1';
+				deliveryPaper.style.visibility = 'visible';
+				deliveryPaper.style.animation = 'none';
+			}
+
+			deliverySequence.hidden = false;
 			deliverySequence.classList.remove('is-playing', 'is-opening', 'is-paper-sliding', 'is-paper-expanding', 'is-waiting', 'is-exit');
+			deliverySequence.classList.add('is-complete');
 			if (deliveryEnvelope) deliveryEnvelope.classList.remove('is-fading');
 			document.body.classList.remove('is-background-revealing');
 			document.body.classList.remove('is-delivery-running');
@@ -384,14 +479,10 @@ const runDeliverySequence = () => {
 					const preTranslateX = Number.parseFloat(invitationContent.style.getPropertyValue('--invitation-reveal-translate-x')) || 0;
 					const preTranslateY = Number.parseFloat(invitationContent.style.getPropertyValue('--invitation-reveal-translate-y')) || 0;
 					invitationContent.style.transform = `translate(${preTranslateX}px, ${preTranslateY}px) scale(${preScaleX}, ${preScaleY})`;
-					invitationContent.style.opacity = '0';
+					invitationContent.style.opacity = '1';
 				}
 				deliverySequence.classList.add('is-paper-expanding');
-				deliveryTimeoutIds.push(
-					window.setTimeout(() => {
-						startDeliveryBackgroundReveal();
-					}, DELIVERY_BACKGROUND_REVEAL_DELAY_MS)
-				);
+				startDeliveryBackgroundReveal();
 				revealInvitationContent();
 				const handlePaperExpandEnd = (endEvent) => {
 					if (endEvent.animationName !== 'delivery-paper-expand') {
@@ -399,12 +490,7 @@ const runDeliverySequence = () => {
 					}
 					deliveryPaper.removeEventListener('animationend', handlePaperExpandEnd);
 					revealInvitationContent();
-					deliverySequence.classList.add('is-exit');
-					deliveryTimeoutIds.push(
-						window.setTimeout(() => {
-							closeDeliverySequence();
-						}, Math.max(DELIVERY_CLOSE_AFTER_EXPAND_DELAY_MS, DELIVERY_EXIT_FADE_MS))
-					);
+				closeDeliverySequence();
 				};
 				deliveryPaper.addEventListener('animationend', handlePaperExpandEnd);
 			};
@@ -415,11 +501,7 @@ const runDeliverySequence = () => {
 		deliveryTimeoutIds.push(
 			window.setTimeout(() => {
 				startDeliveryBackgroundReveal();
-				deliveryTimeoutIds.push(
-					window.setTimeout(() => {
-						revealInvitationContent();
-					}, 360)
-				);
+				revealInvitationContent();
 			}, 2900)
 		);
 
@@ -529,17 +611,17 @@ const openTimelineModal = (titleText) => {
 	
 	// Set content based on title
 	if (titleText === 'Du er invitert') {
-		tlModalContent.textContent = 'Vi er heldige som har deg i livet vårt, og håper du vil være med og sette prikken over i-en på feiringen ❤️';
+		tlModalContent.innerHTML = 'Vi er heldige som har deg i livet vårt, og håper du vil være med og sette prikken over i-en på feiringen <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="var(--accent)" aria-hidden="true" style="display:inline-block;width:1em;height:1em;vertical-align:-0.15em;flex-shrink:0"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>';
 	} else if (titleText === 'Send RSVP') {
-		tlModalContent.innerHTML = 'For å hjelpe oss med planleggingen, fyll ut <a href="https://forms.gle/placeholder" target="_blank" style="color: var(--accent); text-decoration: underline; font-weight: 600;">skjemaet</a> så snart du kan og senest før fristen.';
+		tlModalContent.innerHTML = 'For å hjelpe oss med planleggingen, vennligst fyll ut <a href="https://docs.google.com/forms/d/e/1FAIpQLSd9r-k_LBBe_fsEtJyv0wgeYjwVV7h2oyjlzLnIMInHHFg-iA/viewform?usp=publish-editor" target="_blank" style="color: var(--accent); text-decoration: underline; font-weight: 600;">skjemaet</a> så snart du kan og senest før fristen.';
 	} else if (titleText === 'Bestill overnatting') {
-		tlModalContent.innerHTML = 'Bryllupet vil holde til på et Resort i Farsund. Resortet har holdt av rom spesifikt for våre gjester til en rabattert pris ved bestilling før fristen. Bestill via <a href="https://placeholder-link.no" target="_blank" style="color: var(--accent); text-decoration: underline; font-weight: 600;">denne bookinglenken</a> for å sikre en plass og få rabattert pris. Dere må garantere bookingen med bankkort.<br><br><span class="tl-modal__note"><strong>OBS!</strong> Dere trenger ikke velge frokost som tillegg, det er allerede i romprisen!</span>';
-	} else if (titleText === 'Ankomst og bli kjent') {
-		tlModalContent.innerHTML = 'Fredag er satt av til å lande, finne seg til rette på resorten og la forventningene bygge seg opp til den store dagen. Etter hvert som gjestene ankommer, møtes vi til en uformell middag på brygga og en kveld som setter tonen for resten av feiringen.<br><br><span class="tl-modal__note"><strong>DRESSCODE:</strong> Uformelt pent</span>';
-	} else if (titleText === 'Vi gifter oss i Farsund') {
-		tlModalContent.innerHTML = 'Lørdagen blir en dag vi har gledet oss lenge til, fylt av små og store øyeblikk fra første kaffekopp til siste dans:<br><br>• Rolig morgen med kaffekoppen ved sjøen<br>• Tur inn til sørlandsidylliske Farsund<br>• Vielse i Farsund kirke<br>• Mingling ved brygga<br>• Middag i låven<br>• Fest og feiring utover kvelden<br><br><span class="tl-modal__note"><strong>DRESSCODE:</strong> Pent bryllupsantrekk</span>';
-	} else if (titleText === 'Frokost og på gjensyn') {
-		tlModalContent.innerHTML = 'Vi samles til frokost før det blir pakking og hjemreise.<br><br><strong style="color: var(--signal);">Status etter helgen:</strong> Vi er mann og kone, litt svimle av alt det fine vi har opplevd, og akkurat passe vemodige over at helgen allerede er over.';
+		tlModalContent.innerHTML = 'Vi feirer anledningen på Farsund Resort og gleder oss til en fantastisk helg med dere! Resortet har holdt av rom spesifikt for våre gjester til en rabattert pris ved bestilling før fristen. Bestill via <a href="https://app.mews.com/distributor/67ceb772-ed80-4e54-be12-b36000895667?mewsAvailabilityBlockId=a7580c55-5661-4769-b0f1-b3ec00d78da3&mewsStart=2027-07-02&mewsEnd=2027-07-04" target="_blank" style="color: var(--accent); text-decoration: underline; font-weight: 600;">denne bookinglenken</a> for å sikre en plass og få rabattert pris. Du må garantere bookingen med bankkort.<br><br><span class="tl-modal__note"><strong>OBS:</strong> Dere trenger ikke velge frokost som tillegg, det er allerede i romprisen!</span>';
+	} else if (titleText === 'Velkommen') {
+		tlModalContent.innerHTML = 'Fredag er satt av til å lande, finne seg til rette på resorten og la forventningene bygge seg opp til den store dagen. Gjestene ankommer resortet utover kvelden, men vi håper så mange som mulig rekker å være på plass til middag på brygga kl 18:00. Mat bestilles i restauranten. Ankommer du senere? Ikke stress, bare kom og finn oss på brygga når du er fremme.<br><br><span class="tl-modal__facts"><span class="tl-modal__fact"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true" class="tl-modal__fact-icon"><path fill="currentColor" d="M12 2c-3.87 0-7 3.13-7 7 0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5z"/></svg><span class="tl-modal__fact-value"><a href="https://www.google.com/maps/place/Farsund+Resort/@58.0835472,6.9578762,17z/data=!3m1!4b1!4m9!3m8!1s0x4637795705a3f047:0x71c8a567d02f387d!5m2!4m1!1i2!8m2!3d58.0835472!4d6.9604511!16s%2Fg%2F1tcx5ld6?entry=ttu&g_ep=EgoyMDI2MDUwNi4wIKXMDSoASAFQAw%3D%3D" target="_blank">Farsund Resort</a></span></span><span class="tl-modal__fact"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true" class="tl-modal__fact-icon"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M4.5 14.5 12 11l7.5 3.5a1.9 1.9 0 0 1-.8 3.6H5.3a1.9 1.9 0 0 1-.8-3.6Z"/><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M12 11V7.8"/><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M12 7.8a2.6 2.6 0 1 1 2.6-2.6"/></svg><span class="tl-modal__fact-value">Akkurat det som måtte passe deg</span></span></span>';
+	} else if (titleText === 'Bryllupsdagen') {
+		tlModalContent.innerHTML = 'Lørdagen blir en dag vi har gledet oss lenge til, fylt av små og store øyeblikk fra første kaffekopp til siste dans:<br><br>• 13:30 Avreise til kirka (enten med felles buss eller egen bil)<br>• 14:30 Vielse i Frelserens kirke i Farsund sentrum<br>• 15:45 Avreise tilbake til Farsund Resort<br>• 16:00 Mingling og bobler ved brygga<br>• 18:00 Velkommen til bords<br>• 22:30 Fæst heilt te sola står opp!<br><br><span class="tl-modal__facts"><span class="tl-modal__fact"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true" class="tl-modal__fact-icon"><path fill="currentColor" d="M12 2c-3.87 0-7 3.13-7 7 0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5z"/></svg><span class="tl-modal__fact-value">Vielse i <a href="https://www.google.com/maps/place/Frelserens+kirke/@58.09434,6.7992019,17z/data=!3m1!4b1!4m6!3m5!1s0x463764a144f4111d:0x6caf08cb53255ad!8m2!3d58.09434!4d6.8017768!16s%2Fg%2F121tyl00?entry=ttu&g_ep=EgoyMDI2MDUwNi4wIKXMDSoASAFQAw%3D%3D" target="_blank">Frelserens kirke</a> og fest på <a href="https://www.google.com/maps/place/Farsund+Resort/@58.0835472,6.9578762,17z/data=!3m1!4b1!4m9!3m8!1s0x4637795705a3f047:0x71c8a567d02f387d!5m2!4m1!1i2!8m2!3d58.0835472!4d6.9604511!16s%2Fg%2F1tcx5ld6?entry=ttu&g_ep=EgoyMDI2MDUwNi4wIKXMDSoASAFQAw%3D%3D" target="_blank">Farsund Resort</a></span></span><span class="tl-modal__fact"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true" class="tl-modal__fact-icon"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M4.5 14.5 12 11l7.5 3.5a1.9 1.9 0 0 1-.8 3.6H5.3a1.9 1.9 0 0 1-.8-3.6Z"/><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M12 11V7.8"/><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M12 7.8a2.6 2.6 0 1 1 2.6-2.6"/></svg><span class="tl-modal__fact-value">Smoking/Mørk dress</span></span><span class="tl-modal__fact"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true" class="tl-modal__fact-icon"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M4 9h16v11H4z"/><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M12 9v11"/><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M4 13h16"/><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M12 9c0-2.2-2.2-3.6-3.9-2.6-1.3.8-1.4 2.7-.2 3.6.9.6 2.2.3 3-.5m1.1-.5c0-2.2 2.2-3.6 3.9-2.6 1.3.8 1.4 2.7.2 3.6-.9.6-2.2.3-3-.5"/></svg><span class="tl-modal__fact-value">Vår største glede er å ha med deg på feiringen. Vil du gi en gave, setter vi stor pris på bidrag til bryllupsreise og overraskelser</span></span></span>';
+	} else if (titleText === 'På gjensyn') {
+		tlModalContent.innerHTML = 'Vi samles til frokost før det blir pakking og hjemreise. Vi er forhåpentligvis mann og kone, litt svimle av alt det fine vi har opplevd, og akkurat passe vemodige over at helgen allerede er over <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" aria-hidden="true" style="display:inline-block;width:1em;height:1em;vertical-align:-0.15em;flex-shrink:0;color:var(--accent)"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><circle cx="9" cy="10" r="1" fill="currentColor"/><circle cx="15" cy="10" r="1" fill="currentColor"/><path d="M8.5 14c.9 1.2 2.1 1.8 3.5 1.8S14.6 15.2 15.5 14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 	} else {
 		tlModalContent.textContent = 'Placeholder';
 	}
