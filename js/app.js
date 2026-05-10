@@ -208,29 +208,53 @@ const revealInvitationContent = () => {
 	const startScaleY = Number.parseFloat(invitationContent.style.getPropertyValue('--invitation-reveal-start-scale-y')) || 0.12;
 	const startTranslateX = Number.parseFloat(invitationContent.style.getPropertyValue('--invitation-reveal-translate-x')) || 0;
 	const startTranslateY = Number.parseFloat(invitationContent.style.getPropertyValue('--invitation-reveal-translate-y')) || 0;
+	const isMobileViewport = window.matchMedia('(max-width: 820px)').matches;
+	const devicePixelRatio = Math.max(1, window.devicePixelRatio || 1);
+	const snapToDevicePixel = (value) => Math.round(value * devicePixelRatio) / devicePixelRatio;
+	const stableStartTranslateX = isMobileViewport ? snapToDevicePixel(startTranslateX) : startTranslateX;
+	const stableStartTranslateY = isMobileViewport ? snapToDevicePixel(startTranslateY) : startTranslateY;
 
 	window.requestAnimationFrame(() => {
-		invitationContent.style.transform = `translate(${startTranslateX}px, ${startTranslateY}px) scale(${startScaleX}, ${startScaleY})`;
+		invitationContent.style.transform = `translate(${stableStartTranslateX}px, ${stableStartTranslateY}px) scale(${startScaleX}, ${startScaleY})`;
 		invitationContent.style.opacity = '1';
 		void invitationContent.offsetWidth;
 		document.body.classList.add('is-content-visible');
 		window.requestAnimationFrame(() => {
 
 			invitationContent.getAnimations().forEach((anim) => anim.cancel());
-			const revealAnimation = invitationContent.animate(
-				[
+			const revealKeyframes = isMobileViewport
+				? [
 					{
-						transform: `translate(${startTranslateX}px, ${startTranslateY}px) scale(${startScaleX}, ${startScaleY})`,
+						transform: `translate(${stableStartTranslateX}px, ${stableStartTranslateY}px) scale(${startScaleX}, ${startScaleY})`,
+						opacity: 1,
+						offset: 0,
+					},
+					{
+						transform: `translate(${stableStartTranslateX}px, ${stableStartTranslateY}px) scale(${startScaleX}, ${startScaleY})`,
+						opacity: 1,
+						offset: 0.1,
+					},
+					{
+						transform: 'translate(0px, 0px) scale(1, 1)',
+						opacity: 1,
+						offset: 1,
+					},
+				]
+				: [
+					{
+						transform: `translate(${stableStartTranslateX}px, ${stableStartTranslateY}px) scale(${startScaleX}, ${startScaleY})`,
 						opacity: 1,
 					},
 					{
 						transform: 'translate(0px, 0px) scale(1, 1)',
 						opacity: 1,
 					},
-				],
+				];
+			const revealAnimation = invitationContent.animate(
+				revealKeyframes,
 				{
-					duration: 900,
-					easing: 'cubic-bezier(0.2, 0.6, 0.2, 1)',
+					duration: isMobileViewport ? 980 : 900,
+					easing: isMobileViewport ? 'cubic-bezier(0.16, 0.72, 0.18, 1)' : 'cubic-bezier(0.2, 0.6, 0.2, 1)',
 					fill: 'forwards',
 				}
 			);
