@@ -347,7 +347,7 @@ const runDeliverySequence = () => {
 					const preTranslateX = Number.parseFloat(invitationContent.style.getPropertyValue('--invitation-reveal-translate-x')) || 0;
 					const preTranslateY = Number.parseFloat(invitationContent.style.getPropertyValue('--invitation-reveal-translate-y')) || 0;
 					invitationContent.style.transform = `translate(${preTranslateX}px, ${preTranslateY}px) scale(${preScaleX}, ${preScaleY})`;
-					invitationContent.style.opacity = '1';
+					invitationContent.style.opacity = '0';
 				}
 				deliverySequence.classList.add('is-paper-expanding');
 				startDeliveryBackgroundReveal();

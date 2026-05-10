@@ -25,6 +25,11 @@
 	:root {
 		--mobile-type-scale: 1.22;
 	}
+
+	/* Counter slight mobile washout so colors match desktop rendering. */
+	.invitation {
+		filter: saturate(1.08) contrast(1.04);
+	}
 }
 
 * {
