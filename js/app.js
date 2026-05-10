@@ -232,10 +232,17 @@ const revealInvitationContent = () => {
 						{
 							transform: `translate(${stableStartTranslateX}px, ${stableStartTranslateY}px) scale(${stableStartScaleX}, ${stableStartScaleY})`,
 							opacity: 1,
+							offset: 0,
+						},
+						{
+							transform: `translate(${stableStartTranslateX}px, ${stableStartTranslateY}px) scale(${stableStartScaleX}, ${stableStartScaleY})`,
+							opacity: 1,
+							offset: 0.02,
 						},
 						{
 							transform: 'translate(0px, 0px) scale(1, 1)',
 							opacity: 1,
+							offset: 1,
 						},
 					]
 					: [
