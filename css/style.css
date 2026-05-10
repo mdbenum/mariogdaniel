@@ -35,7 +35,6 @@
 		--signal: #ad5f49;
 		--signal-soft: rgba(173, 95, 73, 0.18);
 		--signal-border: rgba(173, 95, 73, 0.38);
-		color-scheme: light;
 	}
 
 	body {
@@ -45,7 +44,6 @@
 			radial-gradient(ellipse at 70% 92%, rgba(212, 154, 108, 0.18), transparent 32%),
 			radial-gradient(ellipse at 18% 80%, rgba(99, 114, 63, 0.1), transparent 24%),
 			linear-gradient(162deg, #f8eee0 0%, #f3e2cd 32%, #ead6be 66%, #dfc3a9 100%);
-		filter: saturate(1.15) brightness(1.08);
 	}
 
 	.timeline__label {
@@ -762,7 +760,7 @@ body.is-content-revealed .delivery__bg-reveal {
 
 @media (max-width: 41.99rem) {
 	.delivery__paper {
-		width: calc(100vw + 48px);
+		width: calc(100vw + 32px);
 		--delivery-paper-out-shift: 2.6rem;
 		--delivery-paper-start-clip-top: 4%;
 		--delivery-paper-start-clip-bottom: 28%;
