@@ -346,11 +346,6 @@ body.is-content-visible .invitation {
 	transform: translate(var(--invitation-reveal-translate-x, 0px), var(--invitation-reveal-translate-y, 0px)) scale(var(--invitation-reveal-start-scale-x, 0.12), var(--invitation-reveal-start-scale-y, 0.12));
 }
 
-/* During invitation scale-up, use a slightly larger seam buffer to avoid a one-pixel leak. */
-body.is-content-visible:not(.is-content-revealed) .tl-header__visual {
-	--tl-header-portrait-seam-hide: 16px;
-	--tl-header-portrait-fade-end: calc(100% - 6px);
-}
 
 body.is-content-revealed .invitation {
 	opacity: 1;
@@ -801,14 +796,14 @@ body.is-content-revealed .delivery__bg-reveal {
 }
 
 .tl-header-spacer {
-	height: 4rem;
+	height: 1.5rem;
 }
 
 .tl-header__copy {
 	position: absolute;
 	left: 0;
 	right: 0;
-	bottom: 0;
+	bottom: 1.8rem;
 	z-index: 1;
 	padding: 3.1rem 1rem 1.2rem;
 	display: flex;
@@ -837,18 +832,15 @@ body.is-content-revealed .delivery__bg-reveal {
 .tl-header__visual {
 	position: relative;
 	width: min(72vw, 15rem);
-	height: calc(min(72vw, 15rem) - 1.7rem);
+	height: calc(min(72vw, 15rem) * 1.1);
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	overflow: hidden;
+	overflow: visible;
 	z-index: 1;
-	--tl-header-portrait-crop-bottom: 0.6rem;
-	--tl-header-portrait-fade-height: 6.4rem;
-	--tl-header-portrait-seam-hide: 7px;
-	--header-video-base-x: 4px;
+	--tl-header-portrait-crop-bottom: 3.5rem;
+	--tl-header-portrait-fade-height: 10rem;
 	--tl-header-portrait-fade-start: calc(100% - var(--tl-header-portrait-fade-height));
-	--tl-header-portrait-fade-end: calc(100% - 2px);
 }
 
 .tl-header__portrait-wrap {
@@ -856,16 +848,14 @@ body.is-content-revealed .delivery__bg-reveal {
 	left: 0;
 	right: 0;
 	top: 0;
-	bottom: calc(var(--tl-header-portrait-crop-bottom) + var(--tl-header-portrait-seam-hide));
+	bottom: var(--tl-header-portrait-crop-bottom);
 	overflow: hidden;
-	-webkit-mask-image: linear-gradient(180deg, #000 0, #000 var(--tl-header-portrait-fade-start), transparent var(--tl-header-portrait-fade-end), transparent 100%);
-	mask-image: linear-gradient(180deg, #000 0, #000 var(--tl-header-portrait-fade-start), transparent var(--tl-header-portrait-fade-end), transparent 100%);
+	-webkit-mask-image: linear-gradient(180deg, #000 0, #000 var(--tl-header-portrait-fade-start), transparent 100%);
+	mask-image: linear-gradient(180deg, #000 0, #000 var(--tl-header-portrait-fade-start), transparent 100%);
 	-webkit-mask-size: 100% 100%;
 	mask-size: 100% 100%;
 	-webkit-mask-repeat: no-repeat;
 	mask-repeat: no-repeat;
-	transform: translateZ(0.001px);
-	backface-visibility: hidden;
 	pointer-events: none;
 	user-select: none;
 	z-index: 0;
@@ -911,22 +901,10 @@ body.is-content-revealed .delivery__bg-reveal {
 	display: block;
 	width: 100%;
 	height: 100%;
-	object-fit: cover;
-	object-position: center center;
-	-webkit-mask-image: linear-gradient(180deg, #000 0, #000 var(--tl-header-portrait-fade-start), transparent var(--tl-header-portrait-fade-end), transparent 100%);
-	mask-image: linear-gradient(180deg, #000 0, #000 var(--tl-header-portrait-fade-start), transparent var(--tl-header-portrait-fade-end), transparent 100%);
-	-webkit-mask-size: 100% 100%;
-	mask-size: 100% 100%;
-	-webkit-mask-repeat: no-repeat;
-	mask-repeat: no-repeat;
-	transform: translate3d(calc(var(--header-video-base-x, 0px) + var(--header-video-stabilize-x, 0px)), 0, 0) translateZ(0.001px);
-	backface-visibility: hidden;
+	object-fit: contain;
+	object-position: center top;
 	pointer-events: none;
 	user-select: none;
-}
-
-video.tl-header__portrait {
-	background: transparent;
 }
 
 /* ─── Timeline ─── */
@@ -1067,7 +1045,7 @@ video.tl-header__portrait {
 	content: "TRYKK FOR INFO";
 	position: absolute;
 	top: auto;
-	bottom: calc(100% + 3rem);
+	bottom: calc(100% + 1.55rem);
 	left: 50%;
 	transform: translateX(-50%);
 	font-family: "Manrope", sans-serif;
@@ -1087,13 +1065,15 @@ video.tl-header__portrait {
 	inset: auto;
 	border-radius: 0;
 	border: none;
-	bottom: calc(100% + 1.4rem);
+	bottom: calc(100% + 0.6rem);
 	left: 50%;
 	width: 1.3rem;
 	text-align: center;
 	transform: translateX(-50%);
 	font-size: 0.85rem;
 	color: rgba(156, 79, 61, 0.8);
+	animation: none;
+	transition: none;
 	pointer-events: none;
 	z-index: 4;
 }
@@ -1599,7 +1579,7 @@ body.tl-modal-open .tl-modal__panel {
 	}
 
 	.timeline {
-		margin-top: 0;
+		margin-top: -0.58rem;
 		--timeline-padding-top: 0.2rem;
 	}
 
@@ -1608,11 +1588,12 @@ body.tl-modal-open .tl-modal__panel {
 	}
 
 	.tl-header-spacer {
-		height: 4.8rem;
+		height: 0;
 	}
 
 	.tl-header__copy {
-		padding: 3.5rem 1.4rem 1.3rem;
+		bottom: 3.9rem;
+		padding: 2.9rem 1.4rem 1.3rem;
 	}
 
 	.tl-header__title {
@@ -1625,15 +1606,9 @@ body.tl-modal-open .tl-modal__panel {
 
 	.tl-header__visual {
 		width: min(38vw, 18rem);
-		height: calc(min(38vw, 18rem) - 3.6rem);
-		--tl-header-portrait-crop-bottom: 1.3rem;
-		--tl-header-portrait-fade-height: 7rem;
-	}
-
-	.tl-header__portrait {
-		height: 100%;
-		object-fit: cover;
-		object-position: center center;
+		height: calc(min(38vw, 18rem) * 1.1);
+		--tl-header-portrait-crop-bottom: 5rem;
+		--tl-header-portrait-fade-height: 11rem;
 	}
 
 
