@@ -1354,6 +1354,26 @@ body.is-content-revealed .delivery__bg-reveal {
 	text-align: center;
 }
 
+.timeline__new-badge {
+	display: inline-block;
+	margin-left: 0.4em;
+	padding: 0.18em 0.5em;
+	border-radius: 999px;
+	background: var(--accent);
+	color: #fff8f0;
+	font-family: "Manrope", sans-serif;
+	font-size: 0.5rem;
+	font-weight: 700;
+	letter-spacing: 0.1em;
+	line-height: 1.2;
+	text-transform: uppercase;
+	vertical-align: 0.35em;
+}
+
+.timeline__stop.is-seen .timeline__new-badge {
+	display: none;
+}
+
 .timeline__stop--main .timeline__heading {
 	color: var(--accent);
 	font-weight: 700;
